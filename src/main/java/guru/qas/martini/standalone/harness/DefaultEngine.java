@@ -23,18 +23,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
-
-import com.google.common.collect.Lists;
+import org.springframework.context.ApplicationContext;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
 
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
@@ -42,15 +42,21 @@ public class DefaultEngine implements Engine {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEngine.class);
 
+	private final ApplicationContext context;
 	private final Mixologist mixologist;
 
 	@Autowired
-	DefaultEngine(Mixologist mixologist) {
+	DefaultEngine(ApplicationContext context, Mixologist mixologist) {
+		this.context = context;
 		this.mixologist = mixologist;
 	}
 
 	@Override
-	public void doSomething(String filter, ForkJoinPool pool, Integer timeoutInMinutes) throws InterruptedException, ExecutionException {
+	public void doSomething(
+		String filter,
+		ForkJoinPool pool,
+		Integer timeoutInMinutes
+	) throws InterruptedException, ExecutionException {
 		checkState(null != pool, "null ForkJoinPool");
 		LOGGER.info("in doSomething()");
 
@@ -75,11 +81,7 @@ public class DefaultEngine implements Engine {
 	}
 
 	protected List<Callable<String>> getTasks(Collection<Martini> martinis) {
-		List<Callable<String>> tasks = Lists.newArrayListWithExpectedSize(martinis.size());
-		for (Martini martini : martinis) {
-			tasks.add(new MartiniTask(martini));
-		}
-		return tasks;
+		TaskFunction function = TaskFunction.builder().build(context);
+		return martinis.stream().map(function).collect(Collectors.toList());
 	}
-
 }
