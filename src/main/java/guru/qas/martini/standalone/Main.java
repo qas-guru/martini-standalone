@@ -37,14 +37,13 @@ public class Main {
 		this.args = args;
 	}
 
-	public void doSomething() throws ClassNotFoundException, InterruptedException, ExecutionException {
-
+	public void executeSuite() throws ClassNotFoundException, InterruptedException, ExecutionException {
 		try (ConfigurableApplicationContext context = getApplicationContext()) {
 			ForkJoinPool forkJoinPool = getForkJoinPool(context);
 			Engine engine = context.getBean(Engine.class);
 			String filter = args.getSpelFilter();
 			Integer timeoutInMinutes = args.getTimeoutInMinutes();
-			engine.doSomething(filter, forkJoinPool, timeoutInMinutes);
+			engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);
 		}
 	}
 
@@ -73,6 +72,6 @@ public class Main {
 		Args args = new Args();
 		JCommander.newBuilder().addObject(args).build().parse(argv);
 		Main application = new Main(args);
-		application.doSomething();
+		application.executeSuite();
 	}
 }

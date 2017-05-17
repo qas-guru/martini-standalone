@@ -44,7 +44,7 @@ import guru.qas.martini.tag.Categories;
 import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
-public class MartiniTask implements Callable<String> {
+public class MartiniTask implements Callable<MartiniResult> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniTask.class);
 	protected static final String TEMPLATE = "unimplemented step: %s line %s: @%s %s";
@@ -73,7 +73,7 @@ public class MartiniTask implements Callable<String> {
 	}
 
 	@Override
-	public String call() throws Exception {
+	public MartiniResult call() throws Exception {
 		LOGGER.info("executing scenario {}", martini.getId());
 		Thread thread = Thread.currentThread();
 		Set<String> categorizations = categories.getCategorizations(martini);
@@ -100,9 +100,7 @@ public class MartiniTask implements Callable<String> {
 			publisher.publish(new AfterScenarioEvent(this, result));
 		}
 
-		String threadName = Thread.currentThread().getName();
-		String id = martini.getId();
-		return String.format("Thread %s Martini %s", threadName, id);
+		return result;
 	}
 
 	@SuppressWarnings("UnusedReturnValue")

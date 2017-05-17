@@ -34,12 +34,13 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.event.DefaultSuiteIdentifier;
 import guru.qas.martini.event.MartiniEventPublisher;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.tag.Categories;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
-public class TaskFunction implements Function<Martini, Callable<String>> {
+public class TaskFunction implements Function<Martini, Callable<MartiniResult>> {
 
 	protected final BeanFactory beanFactory;
 	protected final MartiniEventPublisher publisher;
@@ -63,7 +64,7 @@ public class TaskFunction implements Function<Martini, Callable<String>> {
 
 	@Nullable
 	@Override
-	public Callable<String> apply(@Nullable Martini martini) {
+	public Callable<MartiniResult> apply(@Nullable Martini martini) {
 		return null == martini ? null :
 			new MartiniTask(
 				beanFactory,
