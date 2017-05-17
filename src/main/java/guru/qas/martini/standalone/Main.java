@@ -28,26 +28,32 @@ import com.beust.jcommander.JCommander;
 
 import guru.qas.martini.standalone.harness.Engine;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @SuppressWarnings("WeakerAccess")
 public class Main {
 
 	private final Args args;
 
-	protected Main(Args args) {
-		this.args = args;
+	public Main(Args args) {
+		this.args = checkNotNull(args, "null Args");
 	}
 
 	public void executeSuite() throws ClassNotFoundException, InterruptedException, ExecutionException {
 		try (ConfigurableApplicationContext context = getApplicationContext()) {
-			ForkJoinPool forkJoinPool = getForkJoinPool(context);
-			Engine engine = context.getBean(Engine.class);
-			String filter = args.getSpelFilter();
-			Integer timeoutInMinutes = args.getTimeoutInMinutes();
-			engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);
+			executeSuite(context);
 		}
 	}
 
-	protected ConfigurableApplicationContext getApplicationContext() {
+	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException, ClassNotFoundException {
+		ForkJoinPool forkJoinPool = getForkJoinPool(context);
+		Engine engine = context.getBean(Engine.class);
+		String filter = args.getSpelFilter();
+		Integer timeoutInMinutes = args.getTimeoutInMinutes();
+		engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);
+	}
+
+	public ConfigurableApplicationContext getApplicationContext() {
 		String[] configLocations = args.getConfigLocations();
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(configLocations);
 		context.registerShutdownHook();
