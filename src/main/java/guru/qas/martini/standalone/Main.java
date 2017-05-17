@@ -16,29 +16,63 @@ limitations under the License.
 
 package guru.qas.martini.standalone;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 import com.beust.jcommander.JCommander;
+
+import guru.qas.martini.standalone.harness.Engine;
 
 @SuppressWarnings("WeakerAccess")
 public class Main {
 
-	public void doSomething(String[] argv) {
-		try (ConfigurableApplicationContext context = getApplicationContext(argv)) {
-			// TODO: start up the spring application context, INCLUDING an event bus
+	private final Args args;
+
+	protected Main(Args args) {
+		this.args = args;
+	}
+
+	public void doSomething() throws ClassNotFoundException, InterruptedException, ExecutionException {
+
+		try (ConfigurableApplicationContext context = getApplicationContext()) {
+			ForkJoinPool forkJoinPool = getForkJoinPool(context);
+			Engine engine = context.getBean(Engine.class);
+			String filter = args.getSpelFilter();
+			Integer timeoutInMinutes = args.getTimeoutInMinutes();
+			engine.doSomething(filter, forkJoinPool, timeoutInMinutes);
 		}
 	}
 
-	protected ConfigurableApplicationContext getApplicationContext(String[] argv) {
-		Args args = new Args();
-		JCommander.newBuilder().addObject(args).build().parse(argv);
+	protected ConfigurableApplicationContext getApplicationContext() {
 		String[] configLocations = args.getConfigLocations();
-		return new ClassPathXmlApplicationContext(configLocations);
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(configLocations);
+		context.registerShutdownHook();
+		return context;
 	}
 
-	public static void main(String[] args) {
-		Main application = new Main();
-		application.doSomething(args);
+	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) throws ClassNotFoundException {
+		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+		Thread.UncaughtExceptionHandler handler = beanFactory.createBean(args.getUncaughtExceptionHandlerImplementation());
+
+		ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
+		factory.setParallelism(args.getParallelism());
+		factory.setAsyncMode(true);
+		factory.setAwaitTerminationSeconds(args.getAwaitTerminationSeconds());
+		factory.setCommonPool(false);
+		factory.setUncaughtExceptionHandler(handler);
+		factory.afterPropertiesSet();
+		return factory.getObject();
+	}
+
+	public static void main(String[] argv) throws Exception {
+		Args args = new Args();
+		JCommander.newBuilder().addObject(args).build().parse(argv);
+		Main application = new Main(args);
+		application.doSomething();
 	}
 }
