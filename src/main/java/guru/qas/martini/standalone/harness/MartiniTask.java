@@ -115,9 +115,14 @@ public class MartiniTask implements Callable<MartiniResult> {
 			result.setEndTimestamp(System.currentTimeMillis());
 			List<StepResult> stepResults = result.getStepResults();
 
-			long executionTime = 0;
+			Long executionTime = null;
 			for (StepResult stepResult : stepResults) {
-				executionTime += stepResult.getExecutionTime(TimeUnit.MILLISECONDS);
+				Long elapsed = stepResult.getExecutionTime(TimeUnit.MILLISECONDS);
+				if (null == executionTime) {
+					executionTime = elapsed;
+				} else if (null != elapsed) {
+					executionTime += elapsed;
+				}
 			}
 			result.setExecutionTimeMs(executionTime);
 			publisher.publish(new AfterScenarioEvent(this, result));
