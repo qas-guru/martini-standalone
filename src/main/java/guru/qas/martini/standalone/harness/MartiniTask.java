@@ -19,12 +19,15 @@ package guru.qas.martini.standalone.harness;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.HttpEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -35,9 +38,12 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.event.AfterScenarioEvent;
 import guru.qas.martini.event.BeforeScenarioEvent;
 import guru.qas.martini.event.MartiniEventPublisher;
+import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.DefaultMartiniResult;
+import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
+import guru.qas.martini.result.StepResult;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.tag.Categories;
 
@@ -78,7 +84,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 		Thread thread = Thread.currentThread();
 		Set<String> categorizations = categories.getCategorizations(martini);
 
-		MartiniResult result = DefaultMartiniResult.builder()
+		DefaultMartiniResult result = DefaultMartiniResult.builder()
 			.setThreadGroupName(thread.getThreadGroup().getName())
 			.setThreadName(thread.getName())
 			.setCategorizations(categorizations)
@@ -90,29 +96,57 @@ public class MartiniTask implements Callable<MartiniResult> {
 
 		try {
 			Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
+			result.setStartTimestamp(System.currentTimeMillis());
+
+			DefaultStepResult lastResult = null;
 			for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
 				Step step = mapEntry.getKey();
 				StepImplementation implementation = mapEntry.getValue();
-				execute(step, implementation);
+				if (null == lastResult || Status.PASSED == lastResult.getStatus()) {
+					lastResult = execute(step, implementation);
+				} else {
+					lastResult = new DefaultStepResult(step, implementation);
+					lastResult.setStatus(Status.SKIPPED);
+				}
+				result.add(lastResult);
 			}
 		}
 		finally {
+			result.setEndTimestamp(System.currentTimeMillis());
+			List<StepResult> stepResults = result.getStepResults();
+
+			long executionTime = 0;
+			for (StepResult stepResult : stepResults) {
+				executionTime += stepResult.getExecutionTime(TimeUnit.MILLISECONDS);
+			}
+			result.setExecutionTimeMs(executionTime);
 			publisher.publish(new AfterScenarioEvent(this, result));
 		}
 
 		return result;
 	}
 
-	@SuppressWarnings("UnusedReturnValue")
-	protected Object execute(Step step, StepImplementation implementation)
+	protected DefaultStepResult execute(Step step, StepImplementation implementation)
 		throws InvocationTargetException, IllegalAccessException {
-
 		LOGGER.info("executing @{} {}", step.getKeyword().trim(), step.getText().trim());
-		assertImplemented(step, implementation);
 
-		Object[] arguments = getArguments(step, implementation);
-		Object bean = getBean(implementation);
-		return execute(implementation, bean, arguments);
+		DefaultStepResult result = new DefaultStepResult(step, implementation);
+		result.setStartTimestamp(System.currentTimeMillis());
+		try {
+			assertImplemented(step, implementation);
+			Object[] arguments = getArguments(step, implementation);
+			Object bean = getBean(implementation);
+			Object o = execute(implementation, bean, arguments);
+			if (HttpEntity.class.isInstance(o)) {
+				result.add(HttpEntity.class.cast(o));
+			}
+		} catch (Exception e) {
+			result.setException(e);
+			result.setStatus(Status.FAILED);
+		} finally {
+			result.setEndTimestamp(System.currentTimeMillis());
+		}
+		return result;
 	}
 
 	protected void assertImplemented(Step step, StepImplementation implementation) {
