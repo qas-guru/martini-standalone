@@ -145,6 +145,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 			if (HttpEntity.class.isInstance(o)) {
 				result.add(HttpEntity.class.cast(o));
 			}
+			result.setStatus(Status.PASSED);
 		} catch (Exception e) {
 			result.setException(e);
 			result.setStatus(Status.FAILED);
