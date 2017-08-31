@@ -6,7 +6,7 @@
 
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-standalone</artifactId>
-	<version>1.0.4-SNAPSHOT</version>
+	<version>1.0.4</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -123,7 +123,7 @@
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>21.0</version>
+			<version>23.0</version>
 		</dependency>
 
 		<dependency>
@@ -142,13 +142,13 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>1.0.3</version>
+			<version>1.0.4</version>
 		</dependency>
 
 		<dependency>
 		    <groupId>com.beust</groupId>
 		    <artifactId>jcommander</artifactId>
-		    <version>1.69</version>
+		    <version>1.72</version>
 		</dependency>
 
 	</dependencies>
