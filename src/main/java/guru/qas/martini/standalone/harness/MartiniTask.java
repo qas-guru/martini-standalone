@@ -44,6 +44,7 @@ import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.result.StepResult;
+import guru.qas.martini.standalone.exception.UnimplementedStepException;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.tag.Categories;
 
@@ -53,7 +54,6 @@ import static com.google.common.base.Preconditions.*;
 public class MartiniTask implements Callable<MartiniResult> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniTask.class);
-	protected static final String TEMPLATE = "unimplemented step: %s line %s: @%s %s";
 
 	private final SuiteIdentifier suiteIdentifier;
 	private final Martini martini;
@@ -146,6 +146,9 @@ public class MartiniTask implements Callable<MartiniResult> {
 				result.add(HttpEntity.class.cast(o));
 			}
 			result.setStatus(Status.PASSED);
+		} catch (UnimplementedStepException e) {
+			result.setException(e);
+			result.setStatus(Status.SKIPPED);
 		} catch (Exception e) {
 			result.setException(e);
 			result.setStatus(Status.FAILED);
@@ -155,15 +158,10 @@ public class MartiniTask implements Callable<MartiniResult> {
 		return result;
 	}
 
-	protected void assertImplemented(Step step, StepImplementation implementation) {
+	protected void assertImplemented(Step step, StepImplementation implementation) throws UnimplementedStepException {
 		Method method = implementation.getMethod();
 		if (null == method) {
-			String description = martini.getRecipe().getSource().getDescription();
-			int line = step.getLocation().getLine();
-			String keyword = step.getKeyword().trim();
-			String text = step.getText().trim();
-			String message = String.format(TEMPLATE, description, line, keyword, text);
-			throw new IllegalStateException(message);
+			throw new UnimplementedStepException(martini, step);
 		}
 	}
 
