@@ -75,7 +75,8 @@ class Args {
 	}
 
 	int getParallelism() {
-		checkArgument(null == parallelism || parallelism > 0, "invalid parallelism %s; must be greater than zero");
+		checkArgument(null == parallelism || parallelism > 0,
+			"invalid parallelism %s; must be greater than zero", parallelism);
 		Integer value = parallelism;
 		if (null == value) {
 			value = Runtime.getRuntime().availableProcessors();
