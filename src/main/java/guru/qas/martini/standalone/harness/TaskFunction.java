@@ -51,6 +51,10 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 	protected final Categories categories;
 	protected final SuiteIdentifier suiteIdentifier;
 
+	SuiteIdentifier getSuiteIdentifier() {
+		return suiteIdentifier;
+	}
+
 	TaskFunction(
 		BeanFactory beanFactory,
 		MartiniEventPublisher publisher,
