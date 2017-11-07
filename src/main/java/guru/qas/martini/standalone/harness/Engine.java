@@ -23,5 +23,9 @@ import javax.annotation.Nullable;
 
 public interface Engine {
 
-	void executeSuite(@Nullable String spelFilter, ForkJoinPool pool, @Nullable Integer timeoutInMinutes) throws InterruptedException, ExecutionException;
+	void executeSuite(
+		@Nullable String spelFilter,
+		ForkJoinPool pool,
+		@Nullable Integer timeoutInMinutes
+	) throws InterruptedException, ExecutionException;
 }

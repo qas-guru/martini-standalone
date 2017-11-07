@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.WritableResource;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;

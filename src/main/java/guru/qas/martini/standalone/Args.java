@@ -16,7 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.standalone;
 
+import java.io.File;
+import java.net.URI;
 import java.util.List;
+
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.WritableResource;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.collect.Lists;
@@ -28,42 +33,38 @@ import static com.google.common.base.Preconditions.*;
 class Args {
 
 	@Parameter(
+		names = "-jsonOutputResource",
+		description = "Spring WriteableResource destination for JSON suite reporting")
+	private String jsonOutputResource;
+
+	@Parameter(
 		names = "-configLocations",
-		description = "Comma-separated list of Spring configuration files",
-		required = false)
+		description = "Comma-separated list of Spring configuration files")
 	private List<String> configLocations = Lists.newArrayList("classpath*:**/applicationContext.xml");
 
 	@Parameter(
 		names = "-spelFilter",
-		description = "Spring SPel expression indicating which scenarios should be executed",
-		required = false)
+		description = "Spring SPel expression indicating which scenarios should be executed")
 	private String spelFilter;
 
 	@Parameter(
 		names = "-parallelism",
-		description = "Fork Join Pool parallelism",
-		required = false)
+		description = "Fork Join Pool parallelism")
 	private Integer parallelism;
 
 	@Parameter(
 		names = "-awaitTerminationSeconds",
-		description = "number of seconds Fork Join Pool will wait before forcing termination",
-		required = false
-	)
+		description = "number of seconds Fork Join Pool will wait before forcing termination")
 	private Integer awaitTerminationSeconds = 30;
 
 	@Parameter(
 		names = "-uncaughtExceptionHandlerImplementation",
-		description = "fully qualified name of Fork Join Pool's Thread.UncaughtExceptionHandler",
-		required = false
-	)
+		description = "fully qualified name of Fork Join Pool's Thread.UncaughtExceptionHandler")
 	private String uncaughtExceptionHandlerImplementation;
 
 	@Parameter(
 		names = "-timeoutInMinutes",
-		description = "period of time after which suite should exit",
-		required = false
-	)
+		description = "period of time after which suite should exit")
 	private Integer timeoutInMinutes = 60;
 
 	String[] getConfigLocations() {
@@ -103,5 +104,27 @@ class Args {
 		checkArgument(null == timeoutInMinutes || timeoutInMinutes > 0,
 			"invalid timeoutInMinutes %s; must be greater than zero", timeoutInMinutes);
 		return timeoutInMinutes;
+	}
+
+	WritableResource getJsonOutputResource() {
+		WritableResource resource = null;
+		if (null != jsonOutputResource && !jsonOutputResource.trim().isEmpty()) {
+			try {
+				URI uri = new URI(jsonOutputResource.trim());
+				resource = new PathResource(uri);
+				File file = resource.getFile();
+				if (file.exists()) {
+					checkState(!file.isDirectory(), "jsonOutputResource is a directory: %s", resource);
+					checkState(file.canWrite(), "unable to write to jsonOutputResource %s", resource);
+				}
+				else {
+					checkState(file.createNewFile(), "unable to create jsonOutputResource file %s", resource);
+				}
+			}
+			catch (Exception e) {
+				throw new RuntimeException("invalid URI specified for jsonOutputResource: " + jsonOutputResource, e);
+			}
+		}
+		return resource;
 	}
 }

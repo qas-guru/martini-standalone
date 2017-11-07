@@ -22,10 +22,12 @@ import java.util.concurrent.ForkJoinPool;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.core.io.WritableResource;
 import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 import com.beust.jcommander.JCommander;
 
+import guru.qas.martini.runtime.event.json.JsonSuiteMarshaller;
 import guru.qas.martini.standalone.harness.Engine;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -50,6 +52,13 @@ public class Main {
 		Engine engine = context.getBean(Engine.class);
 		String filter = args.getSpelFilter();
 		Integer timeoutInMinutes = args.getTimeoutInMinutes();
+
+		WritableResource jsonOutputResource = args.getJsonOutputResource();
+		if (null != jsonOutputResource) {
+			JsonSuiteMarshaller bean = context.getBean(JsonSuiteMarshaller.class, jsonOutputResource);
+			System.out.println("breakpoint");
+		}
+
 		engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);
 	}
 
