@@ -36,7 +36,9 @@ import org.springframework.core.convert.ConversionService;
 import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.AfterScenarioEvent;
+import guru.qas.martini.event.AfterStepEvent;
 import guru.qas.martini.event.BeforeScenarioEvent;
+import guru.qas.martini.event.BeforeStepEvent;
 import guru.qas.martini.event.MartiniEventPublisher;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
@@ -100,7 +102,10 @@ public class MartiniTask implements Callable<MartiniResult> {
 
 			DefaultStepResult lastResult = null;
 			for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
+
 				Step step = mapEntry.getKey();
+				publisher.publish(new BeforeStepEvent(this, result));
+
 				StepImplementation implementation = mapEntry.getValue();
 				if (null == lastResult || Status.PASSED == lastResult.getStatus()) {
 					lastResult = execute(step, implementation);
@@ -109,6 +114,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 					lastResult.setStatus(Status.SKIPPED);
 				}
 				result.add(lastResult);
+				publisher.publish(new AfterStepEvent(this, result));
 			}
 		}
 		finally {

@@ -19,6 +19,8 @@ package guru.qas.martini.standalone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -34,6 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
 public class Main {
+	protected static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
 	private final Args args;
 
@@ -55,8 +58,8 @@ public class Main {
 
 		WritableResource jsonOutputResource = args.getJsonOutputResource();
 		if (null != jsonOutputResource) {
-			JsonSuiteMarshaller bean = context.getBean(JsonSuiteMarshaller.class, jsonOutputResource);
-			System.out.println("breakpoint");
+			context.getBean(JsonSuiteMarshaller.class, jsonOutputResource);
+			LOGGER.info("writing JSON results to {}", jsonOutputResource);
 		}
 
 		engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);

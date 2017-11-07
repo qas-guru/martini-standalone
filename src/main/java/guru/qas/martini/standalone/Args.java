@@ -17,6 +17,7 @@ limitations under the License.
 package guru.qas.martini.standalone;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
@@ -30,8 +31,9 @@ import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
 
 import static com.google.common.base.Preconditions.*;
 
-class Args {
+@SuppressWarnings("ConstantConditions")
 
+class Args {
 	@Parameter(
 		names = "-jsonOutputResource",
 		description = "Spring WriteableResource destination for JSON suite reporting")
@@ -111,19 +113,24 @@ class Args {
 		if (null != jsonOutputResource && !jsonOutputResource.trim().isEmpty()) {
 			try {
 				URI uri = new URI(jsonOutputResource.trim());
-				resource = new PathResource(uri);
-				File file = resource.getFile();
-				if (file.exists()) {
-					checkState(!file.isDirectory(), "jsonOutputResource is a directory: %s", resource);
-					checkState(file.canWrite(), "unable to write to jsonOutputResource %s", resource);
-				}
-				else {
-					checkState(file.createNewFile(), "unable to create jsonOutputResource file %s", resource);
-				}
+				return getJsonOutputResource(uri);
 			}
 			catch (Exception e) {
-				throw new RuntimeException("invalid URI specified for jsonOutputResource: " + jsonOutputResource, e);
+				throw new RuntimeException("unable to write to JSON resource: " + jsonOutputResource, e);
 			}
+		}
+		return resource;
+	}
+
+	private WritableResource getJsonOutputResource(URI uri) throws IOException {
+		WritableResource resource = new PathResource(uri);
+		File file = resource.getFile();
+		if (file.exists()) {
+			checkState(!file.isDirectory(), "jsonOutputResource is a directory: %s", resource);
+			checkState(file.canWrite(), "unable to write to jsonOutputResource %s", resource);
+		}
+		else {
+			checkState(file.createNewFile(), "unable to create jsonOutputResource file %s", resource);
 		}
 		return resource;
 	}
