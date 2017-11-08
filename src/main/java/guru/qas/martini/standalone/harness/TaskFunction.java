@@ -151,9 +151,6 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 		}
 
 		private static void setContextInformation(ApplicationContext context, DefaultSuiteIdentifier.Builder builder) {
-			String id = context.getId();
-			builder.setId(id);
-
 			String name = context.getDisplayName();
 			builder.setName(name);
 
