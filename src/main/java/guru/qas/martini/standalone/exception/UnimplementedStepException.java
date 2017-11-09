@@ -19,6 +19,7 @@ package guru.qas.martini.standalone.exception;
 import gherkin.ast.Step;
 import guru.qas.martini.Martini;
 
+@SuppressWarnings("WeakerAccess")
 public class UnimplementedStepException extends Exception {
 
 	protected static final String TEMPLATE = "unimplemented step: %s line %s: @%s %s";
@@ -29,7 +30,7 @@ public class UnimplementedStepException extends Exception {
 	}
 
 	public static String getMessage(Martini martini, Step step) {
-		String description = martini.getRecipe().getSource().getDescription();
+		String description = martini.getRecipe().getFeatureWrapper().getResource().getDescription();
 		int line = step.getLocation().getLine();
 		String keyword = step.getKeyword().trim();
 		String text = step.getText().trim();
