@@ -14,22 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness;
+package guru.qas.martini.standalone.harness.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.WritableResource;
+
+import guru.qas.martini.runtime.event.json.JsonSuiteMarshaller;
 
 @Configuration
-class EngineConfiguration {
+@Lazy
+public class JsonSuiteMarshallerConfiguration {
+
+	private final AutowireCapableBeanFactory beanFactory;
+
+	@Autowired
+	JsonSuiteMarshallerConfiguration(AutowireCapableBeanFactory beanFactory) {
+		this.beanFactory = beanFactory;
+	}
 
 	@Bean
-	Engine getEngine(
-		@Value("${martini.standalone.engine:#{null}}") Class<? extends Engine> override,
-		AutowireCapableBeanFactory beanFactory
-	) {
-		Class<? extends Engine> implementation = null == override ? DefaultEngine.class : override;
-		return beanFactory.createBean(implementation);
+	JsonSuiteMarshaller getMarshaller(@SuppressWarnings("SpringJavaAutowiringInspection") WritableResource resource) {
+		JsonSuiteMarshaller marshaller = new JsonSuiteMarshaller(resource);
+		beanFactory.autowireBean(marshaller);
+		return marshaller;
 	}
 }

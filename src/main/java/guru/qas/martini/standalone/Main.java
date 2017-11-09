@@ -21,13 +21,13 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.WritableResource;
 import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.runtime.event.json.JsonSuiteMarshaller;
 import guru.qas.martini.standalone.harness.Engine;
@@ -36,7 +36,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
 public class Main {
-	protected static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
 	private final Args args;
 
@@ -51,17 +50,16 @@ public class Main {
 	}
 
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException, ClassNotFoundException {
-		ForkJoinPool forkJoinPool = getForkJoinPool(context);
-		Engine engine = context.getBean(Engine.class);
-		String filter = args.getSpelFilter();
-		Integer timeoutInMinutes = args.getTimeoutInMinutes();
 
 		WritableResource jsonOutputResource = args.getJsonOutputResource();
 		if (null != jsonOutputResource) {
 			context.getBean(JsonSuiteMarshaller.class, jsonOutputResource);
-			LOGGER.info("writing JSON results to {}", jsonOutputResource);
 		}
 
+		Engine engine = context.getBean(Engine.class);
+		String filter = args.getSpelFilter();
+		ForkJoinPool forkJoinPool = getForkJoinPool(context);
+		Integer timeoutInMinutes = args.getTimeoutInMinutes();
 		engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);
 	}
 
@@ -73,8 +71,7 @@ public class Main {
 	}
 
 	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) throws ClassNotFoundException {
-		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-		Thread.UncaughtExceptionHandler handler = beanFactory.createBean(args.getUncaughtExceptionHandlerImplementation());
+		Thread.UncaughtExceptionHandler handler = context.getBean("martiniUncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
 
 		ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
 		factory.setParallelism(args.getParallelism());
@@ -88,8 +85,24 @@ public class Main {
 
 	public static void main(String[] argv) throws Exception {
 		Args args = new Args();
-		JCommander.newBuilder().addObject(args).build().parse(argv);
-		Main application = new Main(args);
-		application.executeSuite();
+		try {
+			JCommander jCommander = JCommander.newBuilder().addObject(args).build();
+			jCommander.parse(argv);
+			main(args, jCommander);
+		}
+		catch (ParameterException e) {
+			e.printStackTrace();
+			e.usage();
+		}
+	}
+
+	private static void main(Args args, JCommander jCommander) throws Exception {
+		if (args.isHelp()) {
+			jCommander.usage();
+		}
+		else {
+			Main application = new Main(args);
+			application.executeSuite();
+		}
 	}
 }

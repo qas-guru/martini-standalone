@@ -35,9 +35,9 @@ import com.google.common.collect.Lists;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.DefaultSuiteIdentifier;
-import guru.qas.martini.event.MartiniEventPublisher;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.MartiniResult;
+import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.tag.Categories;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -46,7 +46,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class TaskFunction implements Function<Martini, Callable<MartiniResult>> {
 
 	protected final BeanFactory beanFactory;
-	protected final MartiniEventPublisher publisher;
+	protected final EventManager eventManager;
 	protected final ConversionService conversionService;
 	protected final Categories categories;
 	protected final SuiteIdentifier suiteIdentifier;
@@ -57,13 +57,13 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 
 	TaskFunction(
 		BeanFactory beanFactory,
-		MartiniEventPublisher publisher,
+		EventManager eventManager,
 		ConversionService conversionService,
 		Categories categories,
 		SuiteIdentifier suiteIdentifier
 	) {
 		this.beanFactory = beanFactory;
-		this.publisher = publisher;
+		this.eventManager = eventManager;
 		this.conversionService = conversionService;
 		this.categories = categories;
 		this.suiteIdentifier = suiteIdentifier;
@@ -75,7 +75,7 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 		return null == martini ? null :
 			new MartiniTask(
 				beanFactory,
-				publisher,
+				eventManager,
 				conversionService,
 				categories,
 				suiteIdentifier,
@@ -92,10 +92,10 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 			checkNotNull(context, "null ApplicationContext");
 			SuiteIdentifier suiteIdentifier = getSuiteIdentifier(context);
 			AutowireCapableBeanFactory beanFactory = context.getAutowireCapableBeanFactory();
-			MartiniEventPublisher publisher = context.getBean(MartiniEventPublisher.class);
+			EventManager eventManager = context.getBean(EventManager.class);
 			ConversionService conversionService = context.getBean(ConversionService.class);
 			Categories categories = context.getBean(Categories.class);
-			return new TaskFunction(beanFactory, publisher, conversionService, categories, suiteIdentifier);
+			return new TaskFunction(beanFactory, eventManager, conversionService, categories, suiteIdentifier);
 		}
 
 		private SuiteIdentifier getSuiteIdentifier(ApplicationContext context) {

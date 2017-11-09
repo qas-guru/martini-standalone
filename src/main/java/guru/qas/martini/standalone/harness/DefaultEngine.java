@@ -26,15 +26,12 @@ import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.io.WritableResource;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.Mixologist;
-import guru.qas.martini.event.AfterSuiteEvent;
-import guru.qas.martini.event.BeforeSuiteEvent;
-import guru.qas.martini.event.MartiniEventPublisher;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.MartiniResult;
+import guru.qas.martini.runtime.event.EventManager;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -44,13 +41,13 @@ public class DefaultEngine implements Engine {
 
 	private final ApplicationContext context;
 	private final Mixologist mixologist;
-	private final MartiniEventPublisher publisher;
+	private final EventManager eventManager;
 
 	@Autowired
-	DefaultEngine(ApplicationContext context, Mixologist mixologist, MartiniEventPublisher publisher) {
+	DefaultEngine(ApplicationContext context, Mixologist mixologist, EventManager eventManager) {
 		this.context = context;
 		this.mixologist = mixologist;
-		this.publisher = publisher;
+		this.eventManager = eventManager;
 	}
 
 	@Override
@@ -71,13 +68,13 @@ public class DefaultEngine implements Engine {
 	private void executeSuite(ForkJoinPool pool, Integer timeoutInMinutes, Collection<Martini> martinis) {
 		TaskFunction function = TaskFunction.builder().build(context);
 		SuiteIdentifier suiteIdentifier = function.getSuiteIdentifier();
-		publisher.publish(new BeforeSuiteEvent(this, suiteIdentifier));
+		eventManager.publishBeforeSuite(this, suiteIdentifier);
 		try {
 			submitTasks(pool, martinis, function);
 			pool.awaitQuiescence(timeoutInMinutes, TimeUnit.MINUTES);
 		}
 		finally {
-			publisher.publish(new AfterSuiteEvent(this, suiteIdentifier));
+			eventManager.publishAfterSuite(this, suiteIdentifier);
 		}
 	}
 

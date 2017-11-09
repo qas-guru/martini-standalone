@@ -27,16 +27,17 @@ import org.springframework.core.io.WritableResource;
 import com.beust.jcommander.Parameter;
 import com.google.common.collect.Lists;
 
-import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
-
 import static com.google.common.base.Preconditions.*;
 
-@SuppressWarnings("ConstantConditions")
-
+@SuppressWarnings({"ConstantConditions", "FieldCanBeLocal"})
 class Args {
+
+	@Parameter(names = {"-h", "--h", "-help", "--help"}, help = true)
+	private boolean help;
+
 	@Parameter(
-		names = "-jsonOutputResource",
-		description = "Spring WriteableResource destination for JSON suite reporting")
+		names = "-jsonOutput",
+		description = "URI destination for JSON suite reporting, e.g. file:///tmp/martini.json")
 	private String jsonOutputResource;
 
 	@Parameter(
@@ -51,18 +52,13 @@ class Args {
 
 	@Parameter(
 		names = "-parallelism",
-		description = "Fork Join Pool parallelism")
-	private Integer parallelism;
+		description = "Fork Join Pool parallelism (defaulted to available processors)")
+	private Integer parallelism = Runtime.getRuntime().availableProcessors();
 
 	@Parameter(
 		names = "-awaitTerminationSeconds",
 		description = "number of seconds Fork Join Pool will wait before forcing termination")
 	private Integer awaitTerminationSeconds = 30;
-
-	@Parameter(
-		names = "-uncaughtExceptionHandlerImplementation",
-		description = "fully qualified name of Fork Join Pool's Thread.UncaughtExceptionHandler")
-	private String uncaughtExceptionHandlerImplementation;
 
 	@Parameter(
 		names = "-timeoutInMinutes",
@@ -77,14 +73,14 @@ class Args {
 		return null == spelFilter ? null : spelFilter.trim();
 	}
 
+	boolean isHelp() {
+		return help;
+	}
+
 	int getParallelism() {
 		checkArgument(null == parallelism || parallelism > 0,
 			"invalid parallelism %s; must be greater than zero", parallelism);
-		Integer value = parallelism;
-		if (null == value) {
-			value = Runtime.getRuntime().availableProcessors();
-		}
-		return value;
+		return parallelism;
 	}
 
 	int getAwaitTerminationSeconds() {
@@ -92,14 +88,6 @@ class Args {
 			"invalid awaitTerminationSeconds %s; must be greater than zero", awaitTerminationSeconds);
 
 		return awaitTerminationSeconds;
-	}
-
-	Class<? extends Thread.UncaughtExceptionHandler> getUncaughtExceptionHandlerImplementation() throws ClassNotFoundException {
-		Class c = null == uncaughtExceptionHandlerImplementation ?
-			null : Class.forName(uncaughtExceptionHandlerImplementation);
-		checkArgument(null == c || Thread.UncaughtExceptionHandler.class.isAssignableFrom(c),
-			"Class is not an implementation of UncaughtExceptionHandler: %s", uncaughtExceptionHandlerImplementation);
-		return null == c ? DefaultUncaughtExceptionHandler.class : c;
 	}
 
 	Integer getTimeoutInMinutes() {

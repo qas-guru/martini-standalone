@@ -35,17 +35,13 @@ import org.springframework.core.convert.ConversionService;
 
 import gherkin.ast.Step;
 import guru.qas.martini.Martini;
-import guru.qas.martini.event.AfterScenarioEvent;
-import guru.qas.martini.event.AfterStepEvent;
-import guru.qas.martini.event.BeforeScenarioEvent;
-import guru.qas.martini.event.BeforeStepEvent;
-import guru.qas.martini.event.MartiniEventPublisher;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.result.StepResult;
+import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.standalone.exception.UnimplementedStepException;
 import guru.qas.martini.step.StepImplementation;
 import guru.qas.martini.tag.Categories;
@@ -59,21 +55,21 @@ public class MartiniTask implements Callable<MartiniResult> {
 
 	private final SuiteIdentifier suiteIdentifier;
 	private final Martini martini;
-	private final MartiniEventPublisher publisher;
+	private final EventManager eventManager;
 	private final Categories categories;
 	private final ConversionService conversionService;
 	private final BeanFactory beanFactory;
 
 	public MartiniTask(
 		BeanFactory beanFactory,
-		MartiniEventPublisher publisher,
+		EventManager eventManager,
 		ConversionService conversionService,
 		Categories categories,
 		SuiteIdentifier suiteIdentifier,
 		Martini martini
 	) {
 		this.beanFactory = checkNotNull(beanFactory, "null BeanFactory");
-		this.publisher = checkNotNull(publisher, "null MartiniEventPublisher");
+		this.eventManager = checkNotNull(eventManager, "null EventManager");
 		this.conversionService = checkNotNull(conversionService, "null ConversionService");
 		this.categories = checkNotNull(categories, "null Categories");
 		this.suiteIdentifier = checkNotNull(suiteIdentifier, "null SuiteIdentifier");
@@ -94,7 +90,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 			.setMartiniSuiteIdentifier(suiteIdentifier)
 			.build();
 
-		publisher.publish(new BeforeScenarioEvent(this, result));
+		eventManager.publishBeforeScenario(this, result);
 
 		try {
 			Map<Step, StepImplementation> stepIndex = martini.getStepIndex();
@@ -104,7 +100,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 			for (Map.Entry<Step, StepImplementation> mapEntry : stepIndex.entrySet()) {
 
 				Step step = mapEntry.getKey();
-				publisher.publish(new BeforeStepEvent(this, result));
+				eventManager.publishBeforeStep(this, result);
 
 				StepImplementation implementation = mapEntry.getValue();
 				if (null == lastResult || Status.PASSED == lastResult.getStatus()) {
@@ -114,7 +110,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 					lastResult.setStatus(Status.SKIPPED);
 				}
 				result.add(lastResult);
-				publisher.publish(new AfterStepEvent(this, result));
+				eventManager.publishAfterStep(this, result);
 			}
 		}
 		finally {
@@ -131,7 +127,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 				}
 			}
 			result.setExecutionTimeMs(executionTime);
-			publisher.publish(new AfterScenarioEvent(this, result));
+			eventManager.publishAfterScenario(this, result);
 		}
 
 		return result;

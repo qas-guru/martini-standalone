@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone;
+package guru.qas.martini.standalone.test;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,7 +43,7 @@ public class TestListener {
 	}
 
 	@EventListener
-	void handle(AfterScenarioEvent event) {
+	public void handle(AfterScenarioEvent event) {
 		MartiniResult result = event.getPayload();
 		String threadName = result.getThreadName();
 		Martini martini = result.getMartini();
@@ -51,7 +51,7 @@ public class TestListener {
 		executionIndex.put(threadName, id);
 	}
 
-	void assertMultithreaded() {
+	public void assertMultithreaded() {
 		Collection<String> values = executionIndex.values();
 		int valueCount = values.size();
 
