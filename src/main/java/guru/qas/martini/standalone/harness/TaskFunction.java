@@ -16,10 +16,6 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nullable;
@@ -28,10 +24,8 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.core.env.Environment;
 
 import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.DefaultSuiteIdentifier;
@@ -90,72 +84,12 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 
 		public TaskFunction build(ApplicationContext context) {
 			checkNotNull(context, "null ApplicationContext");
-			SuiteIdentifier suiteIdentifier = getSuiteIdentifier(context);
+			SuiteIdentifier suiteIdentifier = DefaultSuiteIdentifier.builder().build(context);
 			AutowireCapableBeanFactory beanFactory = context.getAutowireCapableBeanFactory();
 			EventManager eventManager = context.getBean(EventManager.class);
 			ConversionService conversionService = context.getBean(ConversionService.class);
 			Categories categories = context.getBean(Categories.class);
 			return new TaskFunction(beanFactory, eventManager, conversionService, categories, suiteIdentifier);
-		}
-
-		private SuiteIdentifier getSuiteIdentifier(ApplicationContext context) {
-			DefaultSuiteIdentifier.Builder builder = DefaultSuiteIdentifier.builder();
-			setSystemInformation(builder);
-			setSpringInformation(context, builder);
-			return builder.build();
-		}
-
-		private static void setSystemInformation(DefaultSuiteIdentifier.Builder builder) {
-			setHostInformation(builder);
-			setUserInformation(builder);
-			setEnvironmentInformation(builder);
-		}
-
-		private static void setHostInformation(DefaultSuiteIdentifier.Builder builder) {
-			try {
-				InetAddress localHost = InetAddress.getLocalHost();
-				String hostname = localHost.getHostName();
-				builder.setHostname(hostname);
-				String address = localHost.getHostAddress();
-				builder.setHostAddress(address);
-			}
-			catch (UnknownHostException e) {
-				builder.setHostAddress("unknown");
-				builder.setHostAddress("unknown");
-			}
-		}
-
-		private static void setUserInformation(DefaultSuiteIdentifier.Builder builder) {
-			String username = System.getProperty("user.name");
-			builder.setUsername(username);
-		}
-
-		private static void setEnvironmentInformation(DefaultSuiteIdentifier.Builder builder) {
-			Map<String, String> environmentVariables = System.getenv();
-			builder.setEnvironmentVariables(environmentVariables);
-		}
-
-		private static void setSpringInformation(ApplicationContext context, DefaultSuiteIdentifier.Builder builder) {
-			setEnvironmentInformation(context, builder);
-			setContextInformation(context, builder);
-		}
-
-		private static void setEnvironmentInformation(
-			ApplicationContext context,
-			DefaultSuiteIdentifier.Builder builder
-		) {
-			Environment environment = context.getEnvironment();
-			String[] activeProfiles = environment.getActiveProfiles();
-			ArrayList<String> profileList = Lists.newArrayList(activeProfiles);
-			builder.setProfiles(profileList);
-		}
-
-		private static void setContextInformation(ApplicationContext context, DefaultSuiteIdentifier.Builder builder) {
-			String name = context.getDisplayName();
-			builder.setName(name);
-
-			long timestamp = context.getStartupDate();
-			builder.setStartupTimestamp(timestamp);
 		}
 	}
 }
