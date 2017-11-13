@@ -19,11 +19,9 @@ package guru.qas.martini.standalone.harness;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,7 +38,6 @@ import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
-import guru.qas.martini.result.StepResult;
 import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.standalone.exception.UnimplementedStepException;
 import guru.qas.martini.step.StepImplementation;
@@ -115,18 +112,6 @@ public class MartiniTask implements Callable<MartiniResult> {
 		}
 		finally {
 			result.setEndTimestamp(System.currentTimeMillis());
-			List<StepResult> stepResults = result.getStepResults();
-
-			Long executionTime = null;
-			for (StepResult stepResult : stepResults) {
-				Long elapsed = stepResult.getExecutionTime(TimeUnit.MILLISECONDS);
-				if (null == executionTime) {
-					executionTime = elapsed;
-				} else if (null != elapsed) {
-					executionTime += elapsed;
-				}
-			}
-			result.setExecutionTimeMs(executionTime);
 			eventManager.publishAfterScenario(this, result);
 		}
 
