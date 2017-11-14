@@ -19,8 +19,6 @@ package guru.qas.martini.standalone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.WritableResource;
@@ -29,8 +27,8 @@ import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
-import guru.qas.martini.runtime.event.json.JsonSuiteMarshaller;
 import guru.qas.martini.standalone.harness.Engine;
+import guru.qas.martini.standalone.harness.JsonSuiteMarshaller;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -45,17 +43,20 @@ public class Main {
 
 	public void executeSuite() throws ClassNotFoundException, InterruptedException, ExecutionException {
 		try (ConfigurableApplicationContext context = getApplicationContext()) {
+			addListeners(context);
 			executeSuite(context);
 		}
 	}
 
-	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException, ClassNotFoundException {
-
-		WritableResource jsonOutputResource = args.getJsonOutputResource();
-		if (null != jsonOutputResource) {
-			context.getBean(JsonSuiteMarshaller.class, jsonOutputResource);
+	public void addListeners(ConfigurableApplicationContext context) {
+		WritableResource resource = args.getJsonOutputResource();
+		if (null != resource) {
+			JsonSuiteMarshaller marshaller = new JsonSuiteMarshaller(resource);
+			context.addApplicationListener(marshaller);
 		}
+	}
 
+	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException, ClassNotFoundException {
 		Engine engine = context.getBean(Engine.class);
 		String filter = args.getSpelFilter();
 		ForkJoinPool forkJoinPool = getForkJoinPool(context);
