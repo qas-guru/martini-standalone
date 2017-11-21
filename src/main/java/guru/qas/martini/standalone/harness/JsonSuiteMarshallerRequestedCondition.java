@@ -16,6 +16,8 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
+import javax.annotation.Nonnull;
+
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.env.Environment;
@@ -29,7 +31,7 @@ public class JsonSuiteMarshallerRequestedCondition implements Condition {
 
 
 	@Override
-	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+	public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
 		Environment environment = context.getEnvironment();
 		Resource r = environment.getProperty(WritableJsonResourceProperties.PROPERTY, WritableResource.class);
 		return null != r;

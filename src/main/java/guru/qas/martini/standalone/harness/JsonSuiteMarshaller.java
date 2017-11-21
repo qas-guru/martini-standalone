@@ -223,7 +223,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	@EventListener
 	@Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
-	public void handle(AfterSuiteEvent ignored) {
+	public void handle(@SuppressWarnings("unused") AfterSuiteEvent ignored) {
 		monitor.enter();
 		try {
 			jsonWriter.flush();
