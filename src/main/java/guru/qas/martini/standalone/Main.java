@@ -19,6 +19,7 @@ package guru.qas.martini.standalone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.WritableResource;
@@ -51,7 +52,8 @@ public class Main {
 	public void addListeners(ConfigurableApplicationContext context) {
 		WritableResource resource = args.getJsonOutputResource();
 		if (null != resource) {
-			JsonSuiteMarshaller marshaller = new JsonSuiteMarshaller(resource);
+			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
+			JsonSuiteMarshaller marshaller = beanFactory.getBean(JsonSuiteMarshaller.class, resource);
 			context.addApplicationListener(marshaller);
 		}
 	}

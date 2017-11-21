@@ -11,5 +11,5 @@
 
 	<import resource="classpath*:**/martiniStandaloneContext.xml"/>
 
-	<context:component-scan base-package="guru.qas.martini.standalone.test"/>
+	<context:component-scan base-package="guru.qas.martini.standalone.harness"/>
 </beans>

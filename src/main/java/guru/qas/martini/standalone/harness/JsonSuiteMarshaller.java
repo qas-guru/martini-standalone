@@ -43,9 +43,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Configurable;
 import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.WritableResource;
+import org.springframework.stereotype.Component;
 
 import com.google.common.util.concurrent.Monitor;
 import com.google.gson.Gson;
@@ -71,6 +74,8 @@ import guru.qas.martini.runtime.event.json.SuiteIdentifierSerializer;
 import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings({"WeakerAccess", "unused"})
+@Component
+@Lazy
 public class JsonSuiteMarshaller implements InitializingBean, ApplicationListener<MartiniSuiteEvent>, DisposableBean {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(JsonSuiteMarshaller.class);
@@ -158,12 +163,12 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 		builder.registerTypeAdapter(StepImplementation.class, stepImplementationSerializer);
 	}
 
-
 	@Override
 	public void onApplicationEvent(MartiniSuiteEvent event) {
 		if (BeforeSuiteEvent.class.isInstance(event)) {
 			handle(BeforeSuiteEvent.class.cast(event));
-		} else if (AfterSuiteEvent.class.isInstance(event)) {
+		}
+		else if (AfterSuiteEvent.class.isInstance(event)) {
 			handle(AfterSuiteEvent.class.cast(event));
 		}
 	}
@@ -190,7 +195,6 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 		}
 	}
 
-	@EventListener
 	public void handleAfterScenarioEvent(AfterScenarioEvent event) {
 		MartiniResult result = event.getPayload();
 		try {
