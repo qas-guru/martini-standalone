@@ -19,19 +19,18 @@ package guru.qas.martini.standalone;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.springframework.core.io.WritableResource;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.MutablePropertySources;
 import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.standalone.harness.Engine;
-import guru.qas.martini.standalone.harness.JsonSuiteMarshaller;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 public class Main {
@@ -44,17 +43,7 @@ public class Main {
 
 	public void executeSuite() throws ClassNotFoundException, InterruptedException, ExecutionException {
 		try (ConfigurableApplicationContext context = getApplicationContext()) {
-			addListeners(context);
 			executeSuite(context);
-		}
-	}
-
-	public void addListeners(ConfigurableApplicationContext context) {
-		WritableResource resource = args.getJsonOutputResource();
-		if (null != resource) {
-			ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-			JsonSuiteMarshaller marshaller = beanFactory.getBean(JsonSuiteMarshaller.class, resource);
-			context.addApplicationListener(marshaller);
 		}
 	}
 
@@ -68,9 +57,18 @@ public class Main {
 
 	public ConfigurableApplicationContext getApplicationContext() {
 		String[] configLocations = args.getConfigLocations();
-		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(configLocations);
+		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(configLocations, false);
+		updateEnvironment(context);
+		context.refresh();
 		context.registerShutdownHook();
 		return context;
+	}
+
+	private void updateEnvironment(ConfigurableApplicationContext context) {
+		ConfigurableEnvironment environment = context.getEnvironment();
+		MutablePropertySources sources = environment.getPropertySources();
+		sources.addLast(new WritableJsonResourceProperties(args));
+
 	}
 
 	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) throws ClassNotFoundException {

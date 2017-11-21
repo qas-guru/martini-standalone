@@ -16,13 +16,7 @@ limitations under the License.
 
 package guru.qas.martini.standalone;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.util.List;
-
-import org.springframework.core.io.PathResource;
-import org.springframework.core.io.WritableResource;
 
 import com.beust.jcommander.Parameter;
 import com.google.common.collect.Lists;
@@ -96,30 +90,7 @@ class Args {
 		return timeoutInMinutes;
 	}
 
-	WritableResource getJsonOutputResource() {
-		WritableResource resource = null;
-		if (null != jsonOutputResource && !jsonOutputResource.trim().isEmpty()) {
-			try {
-				URI uri = new URI(jsonOutputResource.trim());
-				return getJsonOutputResource(uri);
-			}
-			catch (Exception e) {
-				throw new RuntimeException("unable to write to JSON resource: " + jsonOutputResource, e);
-			}
-		}
-		return resource;
-	}
-
-	private WritableResource getJsonOutputResource(URI uri) throws IOException {
-		WritableResource resource = new PathResource(uri);
-		File file = resource.getFile();
-		if (file.exists()) {
-			checkState(!file.isDirectory(), "jsonOutputResource is a directory: %s", resource);
-			checkState(file.canWrite(), "unable to write to jsonOutputResource %s", resource);
-		}
-		else {
-			checkState(file.createNewFile(), "unable to create jsonOutputResource file %s", resource);
-		}
-		return resource;
+	String getJsonOutputResource() {
+		return null == jsonOutputResource ? null : jsonOutputResource.trim();
 	}
 }

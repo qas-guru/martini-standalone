@@ -43,10 +43,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
@@ -59,7 +58,6 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.event.AfterScenarioEvent;
 import guru.qas.martini.event.AfterSuiteEvent;
 import guru.qas.martini.event.BeforeSuiteEvent;
-import guru.qas.martini.event.MartiniSuiteEvent;
 import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.gherkin.FeatureWrapper;
 import guru.qas.martini.gherkin.Recipe;
@@ -73,23 +71,25 @@ import guru.qas.martini.runtime.event.json.StepResultSerializer;
 import guru.qas.martini.runtime.event.json.SuiteIdentifierSerializer;
 import guru.qas.martini.step.StepImplementation;
 
-@SuppressWarnings({"WeakerAccess", "unused"})
+import static guru.qas.martini.standalone.WritableJsonResourceProperties.PROPERTY;
+
+@SuppressWarnings("WeakerAccess")
 @Component
-@Lazy
-public class JsonSuiteMarshaller implements InitializingBean, ApplicationListener<MartiniSuiteEvent>, DisposableBean {
+@Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
+public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(JsonSuiteMarshaller.class);
 	protected static final byte[] NEWLINE = "\n".getBytes();
 
-	protected final WritableResource resource;
+	protected final Environment environment;
+	protected final MartiniResultSerializer martiniResultSerializer;
+	protected final SuiteIdentifierSerializer suiteIdentifierSerializer;
+	protected final FeatureSerializer featureSerializer;
+	protected final StepResultSerializer stepResultSerializer;
+	protected final StepImplementationSerializer stepImplementationSerializer;
+	protected final HostSerializer hostSerializer;
 	protected final Monitor monitor;
 
-	protected MartiniResultSerializer martiniResultSerializer;
-	protected SuiteIdentifierSerializer suiteIdentifierSerializer;
-	protected FeatureSerializer featureSerializer;
-	protected StepResultSerializer stepResultSerializer;
-	protected StepImplementationSerializer stepImplementationSerializer;
-	protected HostSerializer hostSerializer;
 	protected OutputStream outputStream;
 	protected JsonWriter jsonWriter;
 	protected Gson gson;
@@ -97,42 +97,28 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 	protected HashSet<FeatureWrapper> serializedFeatures;
 
 	@Autowired
-	protected void setMartiniResultSerializer(MartiniResultSerializer s) {
-		this.martiniResultSerializer = s;
-	}
-
-	@Autowired
-	protected void setSuiteIdentifierSerializer(SuiteIdentifierSerializer s) {
-		this.suiteIdentifierSerializer = s;
-	}
-
-	@Autowired
-	protected void setHostSerializer(HostSerializer s) {
-		this.hostSerializer = s;
-	}
-
-	@Autowired
-	protected void setFeatureSerializer(FeatureSerializer s) {
-		this.featureSerializer = s;
-	}
-
-	@Autowired
-	protected void setStepResultSerializer(StepResultSerializer s) {
-		this.stepResultSerializer = s;
-	}
-
-	@Autowired
-	protected void setStepImplementationSerializer(StepImplementationSerializer s) {
-		this.stepImplementationSerializer = s;
-	}
-
-	public JsonSuiteMarshaller(WritableResource resource) {
-		this.resource = resource;
+	public JsonSuiteMarshaller(
+		Environment environment,
+		MartiniResultSerializer martiniResultSerializer,
+		SuiteIdentifierSerializer suiteIdentifierSerializer,
+		FeatureSerializer featureSerializer,
+		StepResultSerializer stepResultSerializer,
+		StepImplementationSerializer stepImplementationSerializer,
+		HostSerializer hostSerializer
+	) {
+		this.environment = environment;
+		this.martiniResultSerializer = martiniResultSerializer;
+		this.suiteIdentifierSerializer = suiteIdentifierSerializer;
+		this.featureSerializer = featureSerializer;
+		this.stepResultSerializer = stepResultSerializer;
+		this.stepImplementationSerializer = stepImplementationSerializer;
+		this.hostSerializer = hostSerializer;
 		this.monitor = new Monitor();
 		serializedFeatures = new HashSet<>();
 	}
 
 	@Override
+	@Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
 	public void afterPropertiesSet() throws Exception {
 		serializedFeatures.clear();
 
@@ -140,6 +126,7 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 		registerTypeAdapters(builder);
 		gson = builder.create();
 
+		WritableResource resource = environment.getRequiredProperty(PROPERTY, WritableResource.class);
 		outputStream = resource.getOutputStream();
 		OutputStreamWriter writer = new OutputStreamWriter(outputStream);
 		jsonWriter = gson.newJsonWriter(writer);
@@ -163,16 +150,8 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 		builder.registerTypeAdapter(StepImplementation.class, stepImplementationSerializer);
 	}
 
-	@Override
-	public void onApplicationEvent(MartiniSuiteEvent event) {
-		if (BeforeSuiteEvent.class.isInstance(event)) {
-			handle(BeforeSuiteEvent.class.cast(event));
-		}
-		else if (AfterSuiteEvent.class.isInstance(event)) {
-			handle(AfterSuiteEvent.class.cast(event));
-		}
-	}
-
+	@EventListener
+	@Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
 	public void handle(BeforeSuiteEvent event) {
 		SuiteIdentifier identifier = event.getPayload();
 		monitor.enter();
@@ -195,6 +174,8 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 		}
 	}
 
+	@EventListener
+	@Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
 	public void handleAfterScenarioEvent(AfterScenarioEvent event) {
 		MartiniResult result = event.getPayload();
 		try {
@@ -240,6 +221,8 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 		}
 	}
 
+	@EventListener
+	@Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
 	public void handle(AfterSuiteEvent ignored) {
 		monitor.enter();
 		try {
@@ -262,7 +245,7 @@ public class JsonSuiteMarshaller implements InitializingBean, ApplicationListene
 				outputStream.close();
 			}
 			catch (IOException e) {
-				LOGGER.error("unable to close OutputStream for resource {}", resource);
+				LOGGER.error("unable to close OutputStream", e);
 			}
 			finally {
 				outputStream = null;
