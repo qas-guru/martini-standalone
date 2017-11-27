@@ -43,7 +43,9 @@ public class Main {
 
 	public void executeSuite() throws ClassNotFoundException, InterruptedException, ExecutionException {
 		try (ConfigurableApplicationContext context = getApplicationContext()) {
+			context.start();
 			executeSuite(context);
+			context.stop();
 		}
 	}
 
