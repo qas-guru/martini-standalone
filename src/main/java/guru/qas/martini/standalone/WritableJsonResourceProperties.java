@@ -16,18 +16,22 @@ limitations under the License.
 
 package guru.qas.martini.standalone;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
 import org.springframework.core.env.PropertySource;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.lang.Nullable;
 
-import static com.google.common.base.Preconditions.checkState;
+import static java.nio.file.StandardOpenOption.*;
 
 public class WritableJsonResourceProperties extends PropertySource<Args> {
 
@@ -59,16 +63,24 @@ public class WritableJsonResourceProperties extends PropertySource<Args> {
 	private WritableResource getResource(String location) {
 		try {
 			URI uri = new URI(location);
-			return getResource(uri);
-		} catch (Exception e) {
-			throw new RuntimeException("invalid output resource: " + location, e);
+			File file = new File(uri);
+			return new AppendingFileSystemResource(file);
+		}
+		catch (Exception e) {
+			throw new RuntimeException("unable to create writable resource: " + location, e);
+		}
+	}
+
+	private static final class AppendingFileSystemResource extends FileSystemResource {
+
+		AppendingFileSystemResource(File file) {
+			super(file);
 		}
 
+		@Override
+		public OutputStream getOutputStream() throws IOException {
+			return Files.newOutputStream(super.getFile().toPath(), CREATE, APPEND);
+		}
 	}
 
-	private WritableResource getResource(URI uri) {
-		PathResource resource = new PathResource(uri);
-		checkState(resource.isWritable(), "resource %s not writable", resource);
-		return resource;
-	}
 }

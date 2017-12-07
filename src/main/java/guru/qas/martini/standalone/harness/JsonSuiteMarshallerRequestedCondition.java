@@ -25,7 +25,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-import guru.qas.martini.standalone.WritableJsonResourceProperties;
+import static guru.qas.martini.standalone.WritableJsonResourceProperties.PROPERTY;
 
 public class JsonSuiteMarshallerRequestedCondition implements Condition {
 
@@ -33,7 +33,7 @@ public class JsonSuiteMarshallerRequestedCondition implements Condition {
 	@Override
 	public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
 		Environment environment = context.getEnvironment();
-		Resource r = environment.getProperty(WritableJsonResourceProperties.PROPERTY, WritableResource.class);
+		Resource r = environment.getProperty(PROPERTY, WritableResource.class);
 		return null != r;
 	}
 }
