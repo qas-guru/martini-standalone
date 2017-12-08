@@ -79,7 +79,7 @@ import static guru.qas.martini.standalone.WritableJsonResourceProperties.PROPERT
 public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(JsonSuiteMarshaller.class);
-	protected static final byte[] NEWLINE = "\n".getBytes();
+	//protected static final byte[] NEWLINE = "\n".getBytes();
 
 	protected final Environment environment;
 	protected final MartiniResultSerializer martiniResultSerializer;
@@ -165,9 +165,9 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	protected void serialize(SuiteIdentifier identifier) {
 		try {
+			jsonWriter.beginArray();
 			gson.toJson(identifier, SuiteIdentifier.class, jsonWriter);
 			jsonWriter.flush();
-			outputStream.write(NEWLINE);
 		}
 		catch (Exception e) {
 			LOGGER.warn("unable to serialize SuiteIdentifier {}", identifier, e);
@@ -201,7 +201,6 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 				gson.toJson(feature, FeatureWrapper.class, jsonWriter);
 				jsonWriter.flush();
 				serializedFeatures.add(feature);
-				outputStream.write(NEWLINE);
 			}
 		}
 		finally {
@@ -214,7 +213,6 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 		try {
 			gson.toJson(result, MartiniResult.class, jsonWriter);
 			jsonWriter.flush();
-			outputStream.write(NEWLINE);
 		}
 		finally {
 			monitor.leave();
@@ -226,6 +224,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 	public void handle(@SuppressWarnings("unused") AfterSuiteEvent ignored) {
 		monitor.enter();
 		try {
+			jsonWriter.endArray();
 			jsonWriter.flush();
 			jsonWriter.close();
 			closeOutputStream();
