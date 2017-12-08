@@ -28,7 +28,6 @@ import org.springframework.core.env.PropertySource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.lang.Nullable;
 
-
 import static java.nio.file.StandardOpenOption.*;
 
 @SuppressWarnings("WeakerAccess")
@@ -54,19 +53,19 @@ public class WritableJsonResourceProperties extends PropertySource<Args> {
 			if (!RETRIEVED.getAndSet(true)) {
 				String location = source.getJsonOutputResource();
 				if (null != location && !location.isEmpty()) {
-					boolean append = source.isJsonAppend();
-					REF.set(getResource(location, append));
+					boolean overwrite = source.isJsonOverwrite();
+					REF.set(getResource(location, overwrite));
 				}
 			}
 		}
 		return REF.get();
 	}
 
-	protected WritableResource getResource(String location, boolean append) {
+	protected WritableResource getResource(String location, boolean overwrite) {
 		try {
 			URI uri = new URI(location);
 			File file = new File(uri);
-			OpenOption[] options = new OpenOption[]{CREATE, append ? APPEND : TRUNCATE_EXISTING};
+			OpenOption[] options = new OpenOption[]{overwrite ? CREATE : CREATE_NEW, TRUNCATE_EXISTING};
 			return new OptionedFileSystemResource(file, options);
 		}
 		catch (Exception e) {

@@ -35,10 +35,11 @@ class Args {
 	private String jsonOutputResource;
 
 	@Parameter(
-		names = "-jsonAppend",
-		description = "append to existing JSON output"
+		names = "-jsonOverwrite",
+		description = "overwrites existing JSON output",
+		arity = 1
 	)
-	private boolean appendJson = false;
+	private boolean jsonOverwrite = true;
 
 	@Parameter(
 		names = "-configLocations",
@@ -100,7 +101,7 @@ class Args {
 		return null == jsonOutputResource ? null : jsonOutputResource.trim();
 	}
 
-	boolean isJsonAppend() {
-		return appendJson;
+	boolean isJsonOverwrite() {
+		return jsonOverwrite;
 	}
 }
