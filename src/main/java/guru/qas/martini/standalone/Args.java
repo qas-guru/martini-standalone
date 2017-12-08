@@ -35,6 +35,12 @@ class Args {
 	private String jsonOutputResource;
 
 	@Parameter(
+		names = "-jsonAppend",
+		description = "append to existing JSON output"
+	)
+	private boolean appendJson = false;
+
+	@Parameter(
 		names = "-configLocations",
 		description = "Comma-separated list of Spring configuration files")
 	private List<String> configLocations = Lists.newArrayList("classpath*:**/applicationContext.xml");
@@ -52,12 +58,12 @@ class Args {
 	@Parameter(
 		names = "-awaitTerminationSeconds",
 		description = "number of seconds Fork Join Pool will wait before forcing termination")
-	private Integer awaitTerminationSeconds = 30;
+	private Integer awaitTerminationSeconds = 5 * 60;
 
 	@Parameter(
 		names = "-timeoutInMinutes",
 		description = "period of time after which suite should exit")
-	private Integer timeoutInMinutes = 60;
+	private Integer timeoutInMinutes = 60 * 12;
 
 	String[] getConfigLocations() {
 		return configLocations.toArray(new String[configLocations.size()]);
@@ -92,5 +98,9 @@ class Args {
 
 	String getJsonOutputResource() {
 		return null == jsonOutputResource ? null : jsonOutputResource.trim();
+	}
+
+	boolean isJsonAppend() {
+		return appendJson;
 	}
 }

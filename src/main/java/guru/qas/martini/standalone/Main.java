@@ -70,7 +70,6 @@ public class Main {
 		ConfigurableEnvironment environment = context.getEnvironment();
 		MutablePropertySources sources = environment.getPropertySources();
 		sources.addLast(new WritableJsonResourceProperties(args));
-
 	}
 
 	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) throws ClassNotFoundException {

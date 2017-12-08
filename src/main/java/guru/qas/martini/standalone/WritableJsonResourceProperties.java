@@ -17,28 +17,27 @@ limitations under the License.
 package guru.qas.martini.standalone;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
-import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
 import org.springframework.core.env.PropertySource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.lang.Nullable;
 
+
 import static java.nio.file.StandardOpenOption.*;
 
+@SuppressWarnings("WeakerAccess")
 public class WritableJsonResourceProperties extends PropertySource<Args> {
 
 	public static final String PROPERTY = "martini.standalone.json.output.resource";
 
-	private static final AtomicBoolean RETRIEVED = new AtomicBoolean(false);
-	private static final AtomicReference<WritableResource> REF = new AtomicReference<>();
+	protected static final AtomicBoolean RETRIEVED = new AtomicBoolean(false);
+	protected static final AtomicReference<WritableResource> REF = new AtomicReference<>();
 
 	public WritableJsonResourceProperties(Args source) {
 		super("Args", source);
@@ -50,37 +49,28 @@ public class WritableJsonResourceProperties extends PropertySource<Args> {
 		return PROPERTY.equals(s) ? getResource() : null;
 	}
 
-	private WritableResource getResource() {
+	protected WritableResource getResource() {
 		synchronized (RETRIEVED) {
 			if (!RETRIEVED.getAndSet(true)) {
 				String location = source.getJsonOutputResource();
-				REF.set(null == location || location.isEmpty() ? null : getResource(location));
+				if (null != location && !location.isEmpty()) {
+					boolean append = source.isJsonAppend();
+					REF.set(getResource(location, append));
+				}
 			}
 		}
 		return REF.get();
 	}
 
-	private WritableResource getResource(String location) {
+	protected WritableResource getResource(String location, boolean append) {
 		try {
 			URI uri = new URI(location);
 			File file = new File(uri);
-			return new AppendingFileSystemResource(file);
+			OpenOption[] options = new OpenOption[]{CREATE, append ? APPEND : TRUNCATE_EXISTING};
+			return new OptionedFileSystemResource(file, options);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("unable to create writable resource: " + location, e);
 		}
 	}
-
-	private static final class AppendingFileSystemResource extends FileSystemResource {
-
-		AppendingFileSystemResource(File file) {
-			super(file);
-		}
-
-		@Override
-		public OutputStream getOutputStream() throws IOException {
-			return Files.newOutputStream(super.getFile().toPath(), CREATE, APPEND);
-		}
-	}
-
 }
