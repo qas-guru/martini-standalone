@@ -16,30 +16,35 @@ limitations under the License.
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.testng.annotations.Test;
+
+import com.beust.jcommander.JCommander;
+
+import guru.qas.martini.standalone.test.TestListener;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class MainTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MainTest.class);
 
-//	public void testHarness() throws Exception {
-//		int availableProcessors = Runtime.getRuntime().availableProcessors();
-//		LOGGER.info("running with {} CPUs", availableProcessors);
-//
-//		checkState(1 < availableProcessors,
-//			"unable to reasonably execute multithreaded test on single-CPU system");
-//
-//		Args args = new Args();
-//		JCommander.newBuilder().addObject(args).build().parse();
-//		Main application = new Main(args);
-//
-//		ConfigurableApplicationContext context = application.getApplicationContext();
-//		TestListener listener = context.getBean(TestListener.class);
-//		application.executeSuite(context);
-//
-//		listener.assertMultithreaded();
-//	}
+	@Test
+	public void testMultithreading() throws Exception {
+		int availableProcessors = Runtime.getRuntime().availableProcessors();
+		LOGGER.info("running with {} CPUs", availableProcessors);
 
-	public static void main(String[] args) throws Exception {
-		Main.main(args);
+		checkState(1 < availableProcessors,
+			"unable to reasonably execute multithreaded test on single-CPU system");
+
+		Args args = new Args();
+		JCommander.newBuilder().addObject(args).build().parse();
+		Main application = new Main(args);
+
+		ConfigurableApplicationContext context = application.getApplicationContext();
+		TestListener listener = context.getBean(TestListener.class);
+		application.executeSuite(context);
+
+		listener.assertMultithreaded();
 	}
 }
