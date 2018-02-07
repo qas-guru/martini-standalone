@@ -19,11 +19,16 @@ package guru.qas.martini.standalone.harness;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
 import org.slf4j.Logger;
@@ -31,10 +36,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.core.convert.ConversionService;
 
+import gherkin.ast.Examples;
+import gherkin.ast.ScenarioDefinition;
+import gherkin.ast.ScenarioOutline;
 import gherkin.ast.Step;
+import gherkin.ast.TableCell;
+import gherkin.ast.TableRow;
+import gherkin.pickles.PickleLocation;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.gherkin.Recipe;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.DefaultStepResult;
 import guru.qas.martini.result.MartiniResult;
@@ -49,6 +61,7 @@ import static com.google.common.base.Preconditions.*;
 public class MartiniTask implements Callable<MartiniResult> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MartiniTask.class);
+	private static final Pattern OUTLINE_PATTERN = Pattern.compile("^<(.*)>$");
 
 	private final SuiteIdentifier suiteIdentifier;
 	private final Martini martini;
@@ -102,7 +115,8 @@ public class MartiniTask implements Callable<MartiniResult> {
 				StepImplementation implementation = mapEntry.getValue();
 				if (null == lastResult || Status.PASSED == lastResult.getStatus()) {
 					lastResult = execute(step, implementation);
-				} else {
+				}
+				else {
 					lastResult = new DefaultStepResult(step, implementation);
 					lastResult.setStatus(Status.SKIPPED);
 				}
@@ -127,19 +141,23 @@ public class MartiniTask implements Callable<MartiniResult> {
 		try {
 			assertImplemented(step, implementation);
 			Object[] arguments = getArguments(step, implementation);
+
 			Object bean = getBean(implementation);
 			Object o = execute(implementation, bean, arguments);
 			if (HttpEntity.class.isInstance(o)) {
 				result.add(HttpEntity.class.cast(o));
 			}
 			result.setStatus(Status.PASSED);
-		} catch (UnimplementedStepException e) {
+		}
+		catch (UnimplementedStepException e) {
 			result.setException(e);
 			result.setStatus(Status.SKIPPED);
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			result.setException(e);
 			result.setStatus(Status.FAILED);
-		} finally {
+		}
+		finally {
 			result.setEndTimestamp(System.currentTimeMillis());
 		}
 		return result;
@@ -157,6 +175,48 @@ public class MartiniTask implements Callable<MartiniResult> {
 		Parameter[] parameters = method.getParameters();
 		Object[] arguments = new Object[parameters.length];
 
+		Map<String, String> exampleValues = null;
+
+		Recipe recipe = martini.getRecipe();
+		ScenarioDefinition definition = recipe.getScenarioDefinition();
+		if (ScenarioOutline.class.isInstance(definition)) {
+			exampleValues = new HashMap<>();
+			ScenarioOutline outline = ScenarioOutline.class.cast(definition);
+
+			int scenarioLine = outline.getLocation().getLine();
+			List<PickleLocation> locations = recipe.getPickle().getLocations();
+			Set<Integer> lines = new HashSet<>(
+				locations.stream().map(PickleLocation::getLine).collect(Collectors.toSet()));
+			lines.remove(scenarioLine);
+			checkState(lines.size() == 1, "unable to determine line number of example");
+			Integer exampleLine = lines.iterator().next();
+
+			List<Examples> examples = outline.getExamples();
+			TableRow header = null;
+			TableRow match = null;
+			for (Iterator<Examples> i = examples.iterator(); null == match && i.hasNext(); ) {
+				Examples nextExamples = i.next();
+				List<TableRow> rows = nextExamples.getTableBody();
+				for (Iterator<TableRow> j = rows.iterator(); null == match && j.hasNext(); ) {
+					TableRow row = j.next();
+					if (row.getLocation().getLine() == exampleLine) {
+						match = row;
+						header = nextExamples.getTableHeader();
+					}
+				}
+			}
+
+			checkState(null != header, "unable to locate matching Examples table");
+			List<TableCell> headerCells = header.getCells();
+			List<TableCell> rowCells = match.getCells();
+			checkState(headerCells.size() == rowCells.size(), "Examples header to row size mismatch");
+			for (int i = 0; i < headerCells.size(); i++) {
+				String headerValue = headerCells.get(i).getValue();
+				String rowValue = rowCells.get(i).getValue();
+				exampleValues.put(headerValue, rowValue);
+			}
+		}
+
 		if (parameters.length > 0) {
 			String text = step.getText();
 			Pattern pattern = implementation.getPattern();
@@ -169,10 +229,23 @@ public class MartiniTask implements Callable<MartiniResult> {
 				String parameterAsString = matcher.group(i + 1);
 				Parameter parameter = parameters[i];
 				Class<?> parameterType = parameter.getType();
-				Object converted = conversionService.convert(parameterAsString, parameterType);
+
+				Object converted;
+				if (null == exampleValues) {
+					converted = conversionService.convert(parameterAsString, parameterType);
+				}
+				else {
+					Matcher tableMatcher = OUTLINE_PATTERN.matcher(parameterAsString);
+					checkState(tableMatcher.find(), "Example table keys must be in the format <key>");
+					String key = tableMatcher.group(1);
+					String tableValue = exampleValues.get(key);
+					converted = conversionService.convert(tableValue, parameterType);
+				}
+
 				arguments[i] = converted;
 			}
 		}
+
 		return arguments;
 	}
 
