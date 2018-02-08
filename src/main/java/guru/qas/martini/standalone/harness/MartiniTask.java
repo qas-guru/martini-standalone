@@ -20,7 +20,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.http.HttpEntity;
 import org.slf4j.Logger;
@@ -42,7 +40,6 @@ import gherkin.ast.ScenarioOutline;
 import gherkin.ast.Step;
 import gherkin.ast.TableCell;
 import gherkin.ast.TableRow;
-import gherkin.pickles.PickleLocation;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.Status;
 import guru.qas.martini.event.SuiteIdentifier;
@@ -183,13 +180,7 @@ public class MartiniTask implements Callable<MartiniResult> {
 			exampleValues = new HashMap<>();
 			ScenarioOutline outline = ScenarioOutline.class.cast(definition);
 
-			int scenarioLine = outline.getLocation().getLine();
-			List<PickleLocation> locations = recipe.getPickle().getLocations();
-			Set<Integer> lines = new HashSet<>(
-				locations.stream().map(PickleLocation::getLine).collect(Collectors.toSet()));
-			lines.remove(scenarioLine);
-			checkState(lines.size() == 1, "unable to determine line number of example");
-			Integer exampleLine = lines.iterator().next();
+			int exampleLine = recipe.getLocation().getLine();
 
 			List<Examples> examples = outline.getExamples();
 			TableRow header = null;
