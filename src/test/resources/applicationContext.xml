@@ -9,7 +9,7 @@
 	   					   http://www.springframework.org/schema/context
 	   					   http://www.springframework.org/schema/context/spring-context.xsd">
 
-	<import resource="classpath*:**/martiniStandaloneContext.xml"/>
+	<import resource="classpath*:**/martiniContext.xml"/>
 
 	<context:component-scan base-package="guru.qas.martini.standalone.harness"/>
 </beans>

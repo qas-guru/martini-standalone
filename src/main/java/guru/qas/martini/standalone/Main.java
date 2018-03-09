@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class Main {
 		this.args = checkNotNull(args, "null Args");
 	}
 
-	public void executeSuite() throws ClassNotFoundException, InterruptedException, ExecutionException {
+	public void executeSuite() throws InterruptedException, ExecutionException {
 		try (ConfigurableApplicationContext context = getApplicationContext()) {
 			context.start();
 			executeSuite(context);
@@ -49,7 +49,7 @@ public class Main {
 		}
 	}
 
-	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException, ClassNotFoundException {
+	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
 		Engine engine = context.getBean(Engine.class);
 		String filter = args.getSpelFilter();
 		ForkJoinPool forkJoinPool = getForkJoinPool(context);
@@ -72,7 +72,7 @@ public class Main {
 		sources.addLast(new WritableJsonResourceProperties(args));
 	}
 
-	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) throws ClassNotFoundException {
+	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) {
 		Thread.UncaughtExceptionHandler handler = context.getBean("martiniUncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
 
 		ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
