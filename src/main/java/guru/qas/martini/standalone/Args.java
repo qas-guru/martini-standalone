@@ -19,6 +19,7 @@ package guru.qas.martini.standalone;
 import java.util.List;
 
 import com.beust.jcommander.Parameter;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
 import static com.google.common.base.Preconditions.*;
@@ -43,13 +44,15 @@ class Args {
 
 	@Parameter(
 		names = "-configLocations",
-		description = "Comma-separated list of Spring configuration files")
+		variableArity = true,
+		description = "list of Spring configuration files")
 	private List<String> configLocations = Lists.newArrayList("classpath*:**/applicationContext.xml");
 
 	@Parameter(
 		names = "-spelFilter",
+		variableArity = true,
 		description = "Spring SPel expression indicating which scenarios should be executed")
-	private String spelFilter;
+	private List<String> spelFilter;
 
 	@Parameter(
 		names = "-parallelism",
@@ -71,7 +74,12 @@ class Args {
 	}
 
 	String getSpelFilter() {
-		return null == spelFilter ? null : spelFilter.trim();
+		String filter = null;
+		if (null != spelFilter) {
+			String joined = Joiner.on(' ').join(spelFilter).replaceAll("\\s+", " ").trim();
+			filter = joined.isEmpty() ? null : joined;
+		}
+		return filter;
 	}
 
 	boolean isHelp() {
