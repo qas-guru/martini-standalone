@@ -17,7 +17,7 @@ limitations under the License.
 package guru.qas.martini.standalone;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -52,9 +52,9 @@ public class Main {
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
 		Engine engine = context.getBean(Engine.class);
 		String filter = args.getSpelFilter();
-		ForkJoinPool forkJoinPool = getForkJoinPool(context);
+		ExecutorService service = getExecutorService(context);
 		Integer timeoutInMinutes = args.getTimeoutInMinutes();
-		engine.executeSuite(filter, forkJoinPool, timeoutInMinutes);
+		engine.executeSuite(filter, service, timeoutInMinutes);
 	}
 
 	public ConfigurableApplicationContext getApplicationContext() {
@@ -72,17 +72,28 @@ public class Main {
 		sources.addLast(new WritableJsonResourceProperties(args));
 	}
 
-	protected ForkJoinPool getForkJoinPool(ConfigurableApplicationContext context) {
-		Thread.UncaughtExceptionHandler handler = context.getBean("martiniUncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
+	protected ExecutorService getExecutorService(ConfigurableApplicationContext context) {
+		Thread.UncaughtExceptionHandler handler = context.getBean(
+			"martiniUncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
 
-		ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
-		factory.setParallelism(args.getParallelism());
-		factory.setAsyncMode(true);
-		factory.setAwaitTerminationSeconds(args.getAwaitTerminationSeconds());
-		factory.setCommonPool(false);
-		factory.setUncaughtExceptionHandler(handler);
-		factory.afterPropertiesSet();
-		return factory.getObject();
+		int parallelism = args.getParallelism();
+		int awaitTerminationSeconds = args.getAwaitTerminationSeconds();
+		ExecutorService executorService;
+
+		if (1 == parallelism) {
+			executorService = new InThreadExecutorService(handler, awaitTerminationSeconds);
+			context.getBeanFactory().registerSingleton(executorService.getClass().getName(), executorService);
+		}
+		else {
+			ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
+			factory.setParallelism(args.getParallelism());
+			factory.setAwaitTerminationSeconds(awaitTerminationSeconds);
+			factory.setCommonPool(false);
+			factory.setUncaughtExceptionHandler(handler);
+			factory.afterPropertiesSet();
+			executorService = factory.getObject();
+		}
+		return executorService;
 	}
 
 	public static void main(String[] argv) throws Exception {

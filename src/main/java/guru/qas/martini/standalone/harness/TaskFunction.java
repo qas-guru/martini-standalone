@@ -18,7 +18,7 @@ package guru.qas.martini.standalone.harness;
 
 import java.util.concurrent.Callable;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -51,14 +51,11 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 		this.suiteIdentifier = suiteIdentifier;
 	}
 
-	@Nullable
 	@Override
-	public Callable<MartiniResult> apply(@Nullable Martini martini) {
-		Callable<MartiniResult> callable = null;
-		if (null != martini) {
-			callable = new MartiniCallable(suiteIdentifier, martini);
-			beanFactory.autowireBean(callable);
-		}
+	public Callable<MartiniResult> apply(@Nonnull Martini martini) {
+		checkNotNull(martini, "null Martini");
+		Callable<MartiniResult> callable = new MartiniCallable(suiteIdentifier, martini);
+		beanFactory.autowireBean(callable);
 		return callable;
 	}
 

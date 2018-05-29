@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@ limitations under the License.
 package guru.qas.martini.standalone.harness;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
@@ -34,6 +34,7 @@ import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
 
 import static com.google.common.base.Preconditions.*;
+import static guru.qas.martini.standalone.harness.JsonSuiteMarshaller.LOGGER;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
@@ -51,37 +52,29 @@ public class DefaultEngine implements Engine {
 	}
 
 	@Override
-	public void executeSuite(
-		String filter,
-		ForkJoinPool pool,
-		Integer timeoutInMinutes
-	) throws InterruptedException, ExecutionException {
-		checkState(null != pool, "null ForkJoinPool");
+	public void executeSuite(String filter, ExecutorService executorService, Integer timeoutInMinutes) {
+		checkState(null != executorService, "null ExecutorService");
 
 		Collection<Martini> martinis = null == filter || filter.isEmpty() ?
 			mixologist.getMartinis() : mixologist.getMartinis(filter);
 		checkState(!martinis.isEmpty(),
 			null == filter || filter.isEmpty() ? "no Martinis found" : "no Martini found matching spel filter %s", filter);
-		executeSuite(pool, timeoutInMinutes, martinis);
+		executeSuite(executorService, timeoutInMinutes, martinis);
 	}
 
-	private void executeSuite(ForkJoinPool pool, Integer timeoutInMinutes, Collection<Martini> martinis) {
+	private void executeSuite(ExecutorService service, Integer timeoutInMinutes, Collection<Martini> martinis) {
 		TaskFunction function = TaskFunction.builder().build(context);
 		SuiteIdentifier suiteIdentifier = function.getSuiteIdentifier();
 		eventManager.publishBeforeSuite(this, suiteIdentifier);
 		try {
-			submitTasks(pool, martinis, function);
-			pool.awaitQuiescence(timeoutInMinutes, TimeUnit.MINUTES);
+			List<Callable<MartiniResult>> tasks = martinis.stream().map(function).collect(Collectors.toList());
+			service.invokeAll(tasks, timeoutInMinutes, TimeUnit.MINUTES);
+		}
+		catch (InterruptedException e) {
+			LOGGER.warn("interrupted while executing suite", e);
 		}
 		finally {
 			eventManager.publishAfterSuite(this, suiteIdentifier);
-		}
-	}
-
-	private static void submitTasks(ForkJoinPool pool, Collection<Martini> martinis, TaskFunction function) {
-		for (Martini martini : martinis) {
-			Callable<MartiniResult> callable = function.apply(martini);
-			pool.submit(ForkJoinTask.adapt(checkNotNull(callable)));
 		}
 	}
 }

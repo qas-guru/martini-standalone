@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ limitations under the License.
 package guru.qas.martini.standalone.harness;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 
 import javax.annotation.Nullable;
 
@@ -25,7 +25,7 @@ public interface Engine {
 
 	void executeSuite(
 		@Nullable String spelFilter,
-		ForkJoinPool pool,
+		ExecutorService executorService,
 		@Nullable Integer timeoutInMinutes
 	) throws InterruptedException, ExecutionException;
 }
