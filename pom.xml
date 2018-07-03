@@ -6,7 +6,7 @@
 
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-standalone</artifactId>
-	<version>2.4.0</version>
+	<version>3.0.0</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -43,9 +43,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
-		<spring.version>5.0.4.RELEASE</spring.version>
+		<maven.compiler.source>10</maven.compiler.source>
+		<maven.compiler.target>10</maven.compiler.target>
 		<slf4j.version>1.7.25</slf4j.version>
 	</properties>
 
@@ -62,6 +61,20 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.7.0</version>
+				<configuration>
+					<release>10</release>
+					<source>10</source>
+					<target>10</target>
+					<verbose>false</verbose>
+					<debug>false</debug>
+				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>6.2</version>
+					</dependency>
+				</dependencies>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -79,13 +92,42 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>3.0.0</version>
+				<version>3.0.1</version>
 				<executions>
 					<execution>
 						<id>attach-javadocs</id>
 						<goals>
 							<goal>jar</goal>
 						</goals>
+						<configuration>
+							<source>10</source>
+							<additionalJOption>-html5</additionalJOption>
+							<additionalJOption>-Xdoclint:none</additionalJOption>
+							<includeTransitiveDependencySources>false</includeTransitiveDependencySources>
+							<includeDependencySources>false</includeDependencySources>
+							<applyJavadocSecurityFix>true</applyJavadocSecurityFix>
+							<failOnError>false</failOnError>
+							<failOnWarnings>false</failOnWarnings>
+							<skip>false</skip>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-changes-plugin</artifactId>
+				<version>2.12.1</version>
+				<executions>
+					<execution>
+						<id>include-announcement-file</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>announcement-generate</goal>
+						</goals>
+						<configuration>
+							<announcementFile>CHANGES.txt</announcementFile>
+							<announcementDirectory>${project.build.directory}</announcementDirectory>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -129,7 +171,7 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>2.3.0</version>
+			<version>3.0.0</version>
 		</dependency>
 
 		<dependency>
@@ -141,7 +183,7 @@
 		<dependency>
 			<groupId>org.testng</groupId>
 			<artifactId>testng</artifactId>
-			<version>6.14.2</version>
+			<version>6.14.3</version>
 			<scope>test</scope>
 		</dependency>
 
