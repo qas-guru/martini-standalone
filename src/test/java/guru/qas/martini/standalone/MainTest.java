@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 
 import com.beust.jcommander.JCommander;
 
+import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.standalone.test.TestListener;
 
 import static com.google.common.base.Preconditions.checkState;

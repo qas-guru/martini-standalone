@@ -29,6 +29,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.standalone.harness.Engine;
+import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
+import guru.qas.martini.standalone.jcommander.WritableResourceConverterFactory;
 
 import static com.google.common.base.Preconditions.*;
 
@@ -51,15 +54,12 @@ public class Main {
 
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
 		Engine engine = context.getBean(Engine.class);
-		String filter = args.getSpelFilter();
 		ExecutorService service = getExecutorService(context);
-		Integer timeoutInMinutes = args.getTimeoutInMinutes();
-		engine.executeSuite(filter, service, timeoutInMinutes);
+		engine.executeSuite(args.spelFilter, service, args.timeoutInMinutes);
 	}
 
 	public ConfigurableApplicationContext getApplicationContext() {
-		String[] configLocations = args.getConfigLocations();
-		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(configLocations, false);
+		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(args.configLocations, false);
 		updateEnvironment(context);
 		context.refresh();
 		context.registerShutdownHook();
@@ -69,25 +69,22 @@ public class Main {
 	private void updateEnvironment(ConfigurableApplicationContext context) {
 		ConfigurableEnvironment environment = context.getEnvironment();
 		MutablePropertySources sources = environment.getPropertySources();
-		sources.addLast(new WritableJsonResourceProperties(args));
+		sources.addLast(new ArgsPropertySource(args));
 	}
 
 	protected ExecutorService getExecutorService(ConfigurableApplicationContext context) {
 		Thread.UncaughtExceptionHandler handler = context.getBean(
 			"martiniUncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
 
-		int parallelism = args.getParallelism();
-		int awaitTerminationSeconds = args.getAwaitTerminationSeconds();
 		ExecutorService executorService;
-
-		if (1 == parallelism) {
-			executorService = new InThreadExecutorService(handler, awaitTerminationSeconds);
+		if (1 == args.parallelism) {
+			executorService = new InThreadExecutorService(handler, args.awaitTerminationSeconds);
 			context.getBeanFactory().registerSingleton(executorService.getClass().getName(), executorService);
 		}
 		else {
 			ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
-			factory.setParallelism(args.getParallelism());
-			factory.setAwaitTerminationSeconds(awaitTerminationSeconds);
+			factory.setParallelism(args.parallelism);
+			factory.setAwaitTerminationSeconds(args.awaitTerminationSeconds);
 			factory.setCommonPool(false);
 			factory.setUncaughtExceptionHandler(handler);
 			factory.afterPropertiesSet();
@@ -98,8 +95,26 @@ public class Main {
 
 	public static void main(String[] argv) throws Exception {
 		Args args = new Args();
+		/*
+			@Parameter(
+		names = "-jsonOverwrite",
+		description = "overwrites existing JSON output",
+		arity = 1
+	)
+	public boolean jsonOverwrite = true;
+
+	@Parameter(
+		names = {"-jsonOutput", "martini.standalone.json.output.resource"},
+		description = "URI destination for JSON suite reporting, e.g. file:///tmp/martini.json")
+	public WritableResource jsonOutputResource;
+
+	IStringConverterFactory var1
+		 */
 		try {
-			JCommander jCommander = JCommander.newBuilder().addObject(args).build();
+			JCommander jCommander = JCommander.newBuilder()
+				.addConverterInstanceFactory(new WritableResourceConverterFactory(args))
+				.addObject(args)
+				.build();
 			jCommander.parse(argv);
 			main(args, jCommander);
 		}
@@ -110,7 +125,7 @@ public class Main {
 	}
 
 	private static void main(Args args, JCommander jCommander) throws Exception {
-		if (args.isHelp()) {
+		if (args.help) {
 			jCommander.usage();
 		}
 		else {

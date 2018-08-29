@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,15 +25,14 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.WritableResource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-import static guru.qas.martini.standalone.WritableJsonResourceProperties.PROPERTY;
+import guru.qas.martini.standalone.jcommander.Args;
 
 public class JsonSuiteMarshallerRequestedCondition implements Condition {
-
 
 	@Override
 	public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
 		Environment environment = context.getEnvironment();
-		Resource r = environment.getProperty(PROPERTY, WritableResource.class);
+		Resource r = environment.getProperty(Args.PROPERTY_JSON_OUTPUT_RESOURCE, WritableResource.class);
 		return null != r;
 	}
 }

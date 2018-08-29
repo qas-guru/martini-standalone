@@ -69,9 +69,8 @@ import guru.qas.martini.runtime.event.json.MartiniResultSerializer;
 import guru.qas.martini.runtime.event.json.StepImplementationSerializer;
 import guru.qas.martini.runtime.event.json.StepResultSerializer;
 import guru.qas.martini.runtime.event.json.SuiteIdentifierSerializer;
+import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.step.StepImplementation;
-
-import static guru.qas.martini.standalone.WritableJsonResourceProperties.PROPERTY;
 
 @SuppressWarnings("WeakerAccess")
 @Component
@@ -79,7 +78,6 @@ import static guru.qas.martini.standalone.WritableJsonResourceProperties.PROPERT
 public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(JsonSuiteMarshaller.class);
-	//protected static final byte[] NEWLINE = "\n".getBytes();
 
 	protected final Environment environment;
 	protected final MartiniResultSerializer martiniResultSerializer;
@@ -126,7 +124,8 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 		registerTypeAdapters(builder);
 		gson = builder.create();
 
-		WritableResource resource = environment.getRequiredProperty(PROPERTY, WritableResource.class);
+		WritableResource resource =
+			environment.getRequiredProperty(Args.PROPERTY_JSON_OUTPUT_RESOURCE, WritableResource.class);
 		outputStream = resource.getOutputStream();
 		OutputStreamWriter writer = new OutputStreamWriter(outputStream);
 		jsonWriter = gson.newJsonWriter(writer);
@@ -253,7 +252,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 	}
 
 	@Override
-	public void destroy() throws Exception {
+	public void destroy() {
 		closeOutputStream();
 	}
 }
