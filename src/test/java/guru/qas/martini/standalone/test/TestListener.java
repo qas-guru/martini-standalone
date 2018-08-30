@@ -54,12 +54,13 @@ public class TestListener {
 	public void assertMultithreaded() {
 		Collection<String> values = executionIndex.values();
 		int valueCount = values.size();
+		checkState(0 < valueCount, "no AfterScenarioEvents handled");
 
 		HashSet<String> scenarioIds = Sets.newHashSet(values);
 		int scenarioCount = scenarioIds.size();
 		checkState(scenarioCount == valueCount, "a scenario was executed more than once");
 
 		Set<String> threadNames = executionIndex.keySet();
-		checkState(threadNames.size() > 1, "only one thread executed all tests");
+		checkState(threadNames.size() > 1, "only one thread executed all tests: %s", executionIndex);
 	}
 }

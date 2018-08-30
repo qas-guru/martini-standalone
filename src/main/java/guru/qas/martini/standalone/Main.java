@@ -95,21 +95,6 @@ public class Main {
 
 	public static void main(String[] argv) throws Exception {
 		Args args = new Args();
-		/*
-			@Parameter(
-		names = "-jsonOverwrite",
-		description = "overwrites existing JSON output",
-		arity = 1
-	)
-	public boolean jsonOverwrite = true;
-
-	@Parameter(
-		names = {"-jsonOutput", "martini.standalone.json.output.resource"},
-		description = "URI destination for JSON suite reporting, e.g. file:///tmp/martini.json")
-	public WritableResource jsonOutputResource;
-
-	IStringConverterFactory var1
-		 */
 		try {
 			JCommander jCommander = JCommander.newBuilder()
 				.addConverterInstanceFactory(new WritableResourceConverterFactory(args))
