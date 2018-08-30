@@ -47,7 +47,7 @@ public class ExecutorServiceConfiguration implements DisposableBean {
 	ExecutorServiceConfiguration(
 		AutowireCapableBeanFactory beanFactory,
 		Args args,
-		@Qualifier("martiniUncaughtExceptionHandler") Thread.UncaughtExceptionHandler exceptionHandler
+		@Qualifier(UncaughtExceptionHandlerConfiguration.BEAN_NAME) Thread.UncaughtExceptionHandler exceptionHandler
 	) {
 		this.beanFactory = beanFactory;
 		this.args = args;

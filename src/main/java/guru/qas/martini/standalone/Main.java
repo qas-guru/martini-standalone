@@ -17,7 +17,6 @@ limitations under the License.
 package guru.qas.martini.standalone;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -28,7 +27,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.standalone.harness.Engine;
-import guru.qas.martini.standalone.harness.configuration.ExecutorServiceConfiguration;
 import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
 
@@ -67,8 +65,7 @@ public class Main {
 
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
 		Engine engine = context.getBean(Engine.class);
-		ExecutorService service = context.getBean(ExecutorServiceConfiguration.BEAN_NAME, ExecutorService.class);
-		engine.executeSuite(args.spelFilter, service, args.timeoutInMinutes);
+		engine.executeSuite(args.spelFilter, args.timeoutInMinutes);
 	}
 
 	public static void main(String[] argv) throws Exception {

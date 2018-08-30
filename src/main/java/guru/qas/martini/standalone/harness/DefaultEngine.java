@@ -18,6 +18,7 @@ package guru.qas.martini.standalone.harness;
 
 import java.util.Collection;
 
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -25,14 +26,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.MessageSource;
 
+import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 
 import guru.qas.martini.Martini;
@@ -43,9 +47,9 @@ import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
+import guru.qas.martini.standalone.harness.configuration.ExecutorServiceConfiguration;
+import guru.qas.martini.standalone.harness.configuration.MartiniComparatorConfiguration;
 import guru.qas.martini.standalone.jcommander.Args;
-
-import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
@@ -54,7 +58,9 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 	protected final Args args;
 	protected final Mixologist mixologist;
 	protected final SuiteIdentifier suiteIdentifier;
+	protected final Comparator<Martini> comparator;
 	protected final EventManager eventManager;
+	protected final ExecutorService executorService;
 
 	protected ApplicationContext applicationContext;
 
@@ -63,12 +69,16 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		Args args,
 		Mixologist mixologist,
 		SuiteIdentifier suiteIdentifier,
-		EventManager eventManager
+		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> comparator,
+		EventManager eventManager,
+		@Qualifier(ExecutorServiceConfiguration.BEAN_NAME) ExecutorService executorService
 	) {
 		this.args = args;
 		this.mixologist = mixologist;
 		this.suiteIdentifier = suiteIdentifier;
+		this.comparator = comparator;
 		this.eventManager = eventManager;
+		this.executorService = executorService;
 	}
 
 	@Override
@@ -77,16 +87,26 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 	}
 
 	@Override
-	public void executeSuite(String filter, ExecutorService executorService, Integer timeoutInMinutes) {
-		checkState(null != executorService, "null ExecutorService");
-
+	public void executeSuite(@Nullable String filter, @Nullable Integer timeoutInMinutes) {
 		eventManager.publishBeforeSuite(this, suiteIdentifier);
 		Collection<Martini> martinis = getMartinis(filter);
-		// TODO: create something that holds ordered martinis instead
 
 		try {
-			Runnable runnable = getRunnable(executorService, suiteIdentifier, martinis);
-			System.out.println(executorService);
+			Runnable runnable = getRunnable(martinis);
+			if (null != timeoutInMinutes && 0 < timeoutInMinutes) {
+				executeWithTimeLimit(runnable, timeoutInMinutes);
+			}
+			else {
+				runnable.run();
+			}
+		}
+		finally {
+			eventManager.publishAfterSuite(this, suiteIdentifier);
+		}
+	}
+
+	protected void executeWithTimeLimit(Runnable runnable, int timeoutInMinutes) {
+		try {
 			SimpleTimeLimiter limiter = SimpleTimeLimiter.create(executorService);
 			limiter.runWithTimeout(runnable, timeoutInMinutes, TimeUnit.MINUTES);
 		}
@@ -95,9 +115,6 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		}
 		catch (TimeoutException e) {
 			throw getMartiniException(e);
-		}
-		finally {
-			eventManager.publishAfterSuite(this, suiteIdentifier);
 		}
 	}
 
@@ -113,14 +130,11 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 				builder.setKey("no.martinis.found").build() :
 				builder.setKey("no.martinis.found.for.filter").setArguments(trimmed).build();
 		}
-		return martinis;
+
+		return Ordering.from(comparator).sortedCopy(martinis);
 	}
 
-	protected Runnable getRunnable(
-		ExecutorService service,
-		SuiteIdentifier suiteIdentifier,
-		Collection<Martini> martiniCollection
-	) {
+	protected Runnable getRunnable(Collection<Martini> martiniCollection) {
 		ConcurrentLinkedDeque<Martini> martinis = new ConcurrentLinkedDeque<>(martiniCollection);
 		ConcurrentLinkedDeque<Future> futures = new ConcurrentLinkedDeque<>();
 
@@ -151,7 +165,7 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 								eventManager.publishAfterScenario(this, result);
 							}
 						};
-						futures.add(service.submit(task));
+						futures.add(executorService.submit(task));
 					}
 
 					if (futures.size() >= args.parallelism) {

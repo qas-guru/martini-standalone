@@ -28,7 +28,9 @@ import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
 @Lazy
 public class UncaughtExceptionHandlerConfiguration {
 
-	@Bean(name = "martiniUncaughtExceptionHandler")
+	public static final String BEAN_NAME = "martiniUncaughtExceptionHandler";
+
+	@Bean(name = BEAN_NAME)
 	Thread.UncaughtExceptionHandler getUncaughtExceptionHandler(
 		AutowireCapableBeanFactory beanFactory,
 		@Value("${martini.thread.uncaught.exception.handler.impl:#{null}}")

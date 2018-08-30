@@ -53,6 +53,7 @@ import guru.qas.martini.runtime.event.json.MartiniResultSerializer;
 import guru.qas.martini.runtime.event.json.StepImplementationSerializer;
 import guru.qas.martini.runtime.event.json.StepResultSerializer;
 import guru.qas.martini.runtime.event.json.SuiteIdentifierSerializer;
+import guru.qas.martini.standalone.harness.configuration.JsonOutputResourceConfiguration;
 import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings("WeakerAccess")
@@ -79,7 +80,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	@Autowired
 	public JsonSuiteMarshaller(
-		@Qualifier("jsonOutputResource") WritableResource outputResource,
+		@Qualifier(JsonOutputResourceConfiguration.BEAN_NAME) WritableResource outputResource,
 		MartiniResultSerializer martiniResultSerializer,
 		SuiteIdentifierSerializer suiteIdentifierSerializer,
 		FeatureSerializer featureSerializer,

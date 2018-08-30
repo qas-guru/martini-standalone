@@ -16,27 +16,31 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import java.nio.file.OpenOption;
+import java.util.Comparator;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.io.WritableResource;
 
-import guru.qas.martini.standalone.jcommander.Args;
-import guru.qas.martini.standalone.io.OptionedFileSystemResource;
-
-import static java.nio.file.StandardOpenOption.*;
+import guru.qas.martini.Martini;
+import guru.qas.martini.standalone.harness.GatedMartiniComparator;
 
 @Configuration
 @Lazy
-public class JsonOutputResourceConfiguration {
+public class MartiniComparatorConfiguration {
 
-	public static final String BEAN_NAME = "jsonOutputResource";
+	public static final String BEAN_NAME = "martiniComparator";
 
 	@Bean(name = BEAN_NAME)
-	WritableResource getJsonOutputResource(Args args) {
-		OpenOption[] options = new OpenOption[]{args.jsonOverwrite ? CREATE : CREATE_NEW, TRUNCATE_EXISTING};
-		return new OptionedFileSystemResource(args.jsonOutputFile, options);
+	Comparator<Martini> getMartiniComparator(
+		AutowireCapableBeanFactory beanFactory,
+		@Value("${martini.prioritizaton.ordering.impl:#{null}}") Class<? extends Comparator> implementation
+	) {
+
+		return null == implementation ?
+			beanFactory.createBean(GatedMartiniComparator.class) :
+			beanFactory.createBean(implementation);
 	}
 }
