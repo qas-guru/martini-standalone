@@ -66,10 +66,11 @@ public class TaskFunction implements Function<Martini, Callable<MartiniResult>> 
 	public static class Builder {
 
 		public TaskFunction build(ApplicationContext context) {
-			checkNotNull(context, "null ApplicationContext");
-			SuiteIdentifier suiteIdentifier = DefaultSuiteIdentifier.builder().build(context);
-			AutowireCapableBeanFactory beanFactory = context.getAutowireCapableBeanFactory();
-			return new TaskFunction(beanFactory, suiteIdentifier);
+			throw new UnsupportedOperationException();
+//			checkNotNull(context, "null ApplicationContext");
+//			SuiteIdentifier suiteIdentifier = DefaultSuiteIdentifier.builder().build(context);
+//			AutowireCapableBeanFactory beanFactory = context.getAutowireCapableBeanFactory();
+//			return new TaskFunction(beanFactory, suiteIdentifier);
 		}
 	}
 }
