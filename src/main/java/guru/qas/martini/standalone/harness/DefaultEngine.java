@@ -19,6 +19,8 @@ package guru.qas.martini.standalone.harness;
 import java.util.Collection;
 
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.Stack;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -28,6 +30,8 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
@@ -43,6 +47,7 @@ import guru.qas.martini.Martini;
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.Mixologist;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.gate.MartiniGate;
 import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.result.DefaultMartiniResult;
 import guru.qas.martini.result.MartiniResult;
@@ -61,6 +66,7 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 	protected final Comparator<Martini> comparator;
 	protected final EventManager eventManager;
 	protected final ExecutorService executorService;
+	protected final Logger logger;
 
 	protected ApplicationContext applicationContext;
 
@@ -79,6 +85,7 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		this.comparator = comparator;
 		this.eventManager = eventManager;
 		this.executorService = executorService;
+		this.logger = LoggerFactory.getLogger(this.getClass());
 	}
 
 	@Override
@@ -149,21 +156,86 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 					if (futures.size() < args.parallelism) {
 						Runnable task = () -> {
 
-							Martini next;
+							Martini martini = null;
+							Stack<MartiniGate> permitted = new Stack<>();
+
 							synchronized (martinis) {
-								next = martinis.pollFirst(); // TODO: gating!
+								for (Iterator<Martini> i = martinis.iterator(); null == martini && i.hasNext(); ) {
+									Martini candidate = i.next();
+									logger.debug("attempting to gate Martini {}", candidate);
+
+									GateIndex gateIndex = GateIndex.builder().build(candidate);
+									Collection<MartiniGate> gates = gateIndex.getUniquedByName();
+
+									boolean locked = true;
+									for (Iterator<MartiniGate> j = gates.iterator(); locked && j.hasNext(); ) {
+										MartiniGate gate = j.next();
+
+										try {
+											locked = gate.enter();
+											if (locked) {
+												logger.info("locked gate {}", gate);
+												permitted.push(gate);
+											}
+										}
+										finally {
+											if (!locked) {
+												while (!permitted.isEmpty()) {
+													MartiniGate permittedGate = permitted.pop();
+													try {
+														permittedGate.leave();
+														logger.info("left gate {}", permittedGate);
+													}
+													catch (Exception e) {
+														logger.warn("unable to leave MartiniGate: {}", permittedGate, e);
+													}
+												}
+											}
+										}
+									}
+									if (locked) {
+										if (!martinis.remove(candidate)) {
+											while (!permitted.isEmpty()) {
+												MartiniGate gate = permitted.pop();
+												try {
+													gate.leave();
+												}
+												catch (Exception e) {
+													logger.warn("unable to leave MartiniGate: {}", gate, e);
+												}
+											}
+										}
+										else {
+											martini = candidate;
+										}
+									}
+								}
 							}
 
-							Thread thread = Thread.currentThread();
-							String threadName = thread.getName();
-							System.out.printf("Thread %s next: %s\n", threadName, next);
+							try {
+								if (null != martini) {
+									Thread thread = Thread.currentThread();
+									String threadName = thread.getName();
+									System.out.printf("Thread %s next: %s\n", threadName, martini);
 
-							if (null != next) {
-								MartiniResult result = getMartiniResult(suiteIdentifier, next);
-								eventManager.publishBeforeScenario(this, result);
-								// TODO: actualy do something with Martini
-								eventManager.publishAfterScenario(this, result);
+									MartiniResult result = getMartiniResult(suiteIdentifier, martini);
+									eventManager.publishBeforeScenario(this, result);
+									// TODO: actualy do something with Martini
+									eventManager.publishAfterScenario(this, result);
+								}
 							}
+							finally {
+								while (!permitted.isEmpty()) {
+									MartiniGate gate = permitted.pop();
+									try {
+										gate.leave();
+									}
+									catch (Exception e) {
+										logger.warn("unable to leave MartiniGate: {}", gate, e);
+									}
+								}
+							}
+
 						};
 						futures.add(executorService.submit(task));
 					}

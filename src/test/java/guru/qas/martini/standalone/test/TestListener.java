@@ -16,13 +16,16 @@ limitations under the License.
 
 package guru.qas.martini.standalone.test;
 
-import java.util.Collection;
+import java.util.ArrayList;
+
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -52,13 +55,15 @@ public class TestListener {
 	}
 
 	public void assertMultithreaded() {
-		Collection<String> executed = executionIndex.values();
+		List<String> executed = new ArrayList<>(executionIndex.values());
 		checkState(!executed.isEmpty(), "no AfterScenarioEvents handled");
 
 		HashSet<String> unique = Sets.newHashSet(executed);
 		int scenariosExecuted = executed.size();
 		int uniqueScenarios = unique.size();
-		checkState(!(scenariosExecuted > uniqueScenarios), "scenarios executed multiple times: %s", executed);
+		checkState(scenariosExecuted == uniqueScenarios,
+			"wrong number of executions; expected %s runs but detected %s:\nexecuted\n%s\nunique\n%s",
+			uniqueScenarios, scenariosExecuted, Joiner.on(',').join(executed), Joiner.on(',').join(unique));
 
 		Set<String> threadNames = executionIndex.keySet();
 		checkState(threadNames.size() > 1, "only one thread executed all tests: %s", executionIndex);

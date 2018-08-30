@@ -16,26 +16,20 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-
-import javax.annotation.Nullable;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Configurable;
 
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Ordering;
 
 import guru.qas.martini.Martini;
-import guru.qas.martini.gate.MartiniGate;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
 public class GatedMartiniComparator implements Comparator<Martini>, InitializingBean {
 
-	protected Ordering<By> ordering;
+	protected Ordering<GateIndex> ordering;
 
 	protected GatedMartiniComparator() {
 	}
@@ -46,8 +40,8 @@ public class GatedMartiniComparator implements Comparator<Martini>, Initializing
 	}
 
 	protected void initializeOrdering() {
-		Comparator<By> highestPriority = Ordering.natural().nullsLast().onResultOf(By::highestPriority);
-		Ordering<By> byGateCount = Ordering.natural().nullsLast().onResultOf(By::gateCount);
+		Comparator<GateIndex> highestPriority = Ordering.natural().nullsLast().onResultOf(GateIndex::highestPriority);
+		Ordering<GateIndex> byGateCount = Ordering.natural().nullsLast().onResultOf(GateIndex::gateCount);
 
 		ordering = Ordering
 			.from(highestPriority)
@@ -57,52 +51,9 @@ public class GatedMartiniComparator implements Comparator<Martini>, Initializing
 
 	@Override
 	public int compare(Martini left, Martini right) {
-		By lefty = null == left ? null : By.builder().build(left);
-		By righty = null == right ? null : By.builder().build(right);
-		return ordering.compare(lefty, righty);
+		GateIndex leftIndex = null == left ? null : GateIndex.builder().build(left);
+		GateIndex rightIndex = null == right ? null : GateIndex.builder().build(right);
+		return ordering.compare(leftIndex, rightIndex);
 	}
 
-	@SuppressWarnings("WeakerAccess")
-	protected static final class By {
-
-		private final LinkedHashMultimap<String, Integer> index;
-
-		protected By(LinkedHashMultimap<String, Integer> index) {
-			this.index = index;
-		}
-
-		public int highestPriority() {
-			return index.values().stream().min(Ordering.natural()).orElse(Integer.MAX_VALUE);
-		}
-
-		public int gateCount() {
-			return Integer.MAX_VALUE - index.keySet().size();
-		}
-
-		public static Builder builder() {
-			return new Builder();
-		}
-
-		protected static class Builder {
-
-			protected Builder() {
-			}
-
-			protected By build(@Nullable Martini martini) {
-				Collection<MartiniGate> gates = null == martini ? null : martini.getGates();
-				LinkedHashMultimap<String, Integer> index = null == gates ? getIndex(Collections.emptySet()) : getIndex(gates);
-				return new By(index);
-			}
-
-			protected LinkedHashMultimap<String, Integer> getIndex(Collection<MartiniGate> gates) {
-				LinkedHashMultimap<String, Integer> index = LinkedHashMultimap.create();
-				gates.forEach(gate -> {
-					String name = gate.getName();
-					int priority = gate.getPriority();
-					index.put(name, priority);
-				});
-				return index;
-			}
-		}
-	}
 }

@@ -19,6 +19,8 @@ package guru.qas.martini.standalone.harness.configuration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -34,6 +36,8 @@ import guru.qas.martini.standalone.jcommander.Args;
 @Configuration
 @Lazy
 public class ExecutorServiceConfiguration implements DisposableBean {
+
+	protected static final Logger LOGGER = LoggerFactory.getLogger(ExecutorServiceConfiguration.class);
 
 	public static final String BEAN_NAME = "martiniExecutorService";
 
@@ -56,6 +60,7 @@ public class ExecutorServiceConfiguration implements DisposableBean {
 
 	@Bean(name = BEAN_NAME)
 	ExecutorService getExecutorService() {
+		LOGGER.info("creating ExecutorService with parallelization {}", args.parallelism);
 		return 1 == args.parallelism ? getInThreadExecutorService() : getForkJoinExecutorService();
 	}
 
