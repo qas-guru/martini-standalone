@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,22 +16,6 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
-/*
-Copyright 2017 Penny Rohr Curich
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -43,9 +27,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
@@ -69,7 +53,6 @@ import guru.qas.martini.runtime.event.json.MartiniResultSerializer;
 import guru.qas.martini.runtime.event.json.StepImplementationSerializer;
 import guru.qas.martini.runtime.event.json.StepResultSerializer;
 import guru.qas.martini.runtime.event.json.SuiteIdentifierSerializer;
-import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings("WeakerAccess")
@@ -79,7 +62,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(JsonSuiteMarshaller.class);
 
-	protected final Environment environment;
+	protected final WritableResource outputResource;
 	protected final MartiniResultSerializer martiniResultSerializer;
 	protected final SuiteIdentifierSerializer suiteIdentifierSerializer;
 	protected final FeatureSerializer featureSerializer;
@@ -96,7 +79,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
 	@Autowired
 	public JsonSuiteMarshaller(
-		Environment environment,
+		@Qualifier("jsonOutputResource") WritableResource outputResource,
 		MartiniResultSerializer martiniResultSerializer,
 		SuiteIdentifierSerializer suiteIdentifierSerializer,
 		FeatureSerializer featureSerializer,
@@ -104,7 +87,7 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 		StepImplementationSerializer stepImplementationSerializer,
 		HostSerializer hostSerializer
 	) {
-		this.environment = environment;
+		this.outputResource = outputResource;
 		this.martiniResultSerializer = martiniResultSerializer;
 		this.suiteIdentifierSerializer = suiteIdentifierSerializer;
 		this.featureSerializer = featureSerializer;
@@ -124,13 +107,11 @@ public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 		registerTypeAdapters(builder);
 		gson = builder.create();
 
-		WritableResource resource =
-			environment.getRequiredProperty(Args.PROPERTY_JSON_OUTPUT_RESOURCE, WritableResource.class);
-		outputStream = resource.getOutputStream();
+		outputStream = outputResource.getOutputStream();
 		OutputStreamWriter writer = new OutputStreamWriter(outputStream);
 		jsonWriter = gson.newJsonWriter(writer);
 
-		LOGGER.info("writing JSON to {}", resource);
+		LOGGER.info("writing JSON to {}", outputResource);
 	}
 
 	protected GsonBuilder getGsonBuilder() {

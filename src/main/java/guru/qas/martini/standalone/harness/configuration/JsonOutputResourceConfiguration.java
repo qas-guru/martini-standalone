@@ -1,5 +1,5 @@
 /*
-Copyright 2017-2018 Penny Rohr Curich
+Copyright 2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,25 +16,25 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import java.nio.file.OpenOption;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.WritableResource;
 
-import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
+import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.io.OptionedFileSystemResource;
+
+import static java.nio.file.StandardOpenOption.*;
 
 @Configuration
 @Lazy
-public class UncaughtExceptionHandlerConfiguration {
+class JsonOutputResourceConfiguration {
 
-	@Bean(name = "martiniUncaughtExceptionHandler")
-	Thread.UncaughtExceptionHandler getUncaughtExceptionHandler(
-		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.thread.uncaught.exception.handler.impl:#{null}}")
-			Class<? extends Thread.UncaughtExceptionHandler> implementation
-	) {
-		return null == implementation ?
-			beanFactory.createBean(DefaultUncaughtExceptionHandler.class) : beanFactory.createBean(implementation);
+	@Bean(name = "jsonOutputResource")
+	WritableResource getJsonOutputResource(Args args) {
+		OpenOption[] options = new OpenOption[]{args.jsonOverwrite ? CREATE : CREATE_NEW, TRUNCATE_EXISTING};
+		return new OptionedFileSystemResource(args.jsonOutputFile, options);
 	}
 }

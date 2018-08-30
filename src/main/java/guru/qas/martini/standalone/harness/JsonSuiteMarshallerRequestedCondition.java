@@ -21,18 +21,20 @@ import javax.annotation.Nonnull;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.WritableResource;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
+
+import static com.google.common.base.Preconditions.checkState;
 
 public class JsonSuiteMarshallerRequestedCondition implements Condition {
 
 	@Override
 	public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
 		Environment environment = context.getEnvironment();
-		Resource r = environment.getProperty(Args.PROPERTY_JSON_OUTPUT_RESOURCE, WritableResource.class);
-		return null != r;
+		Args args = environment.getProperty(ArgsPropertySource.PROPERTY, Args.class);
+		checkState(null != args, "unable to retrieve Args");
+		return null != args.jsonOutputFile;
 	}
 }

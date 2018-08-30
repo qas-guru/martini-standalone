@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,15 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.standalone.jcommander;
 
-import org.springframework.core.io.WritableResource;
+import java.io.File;
 
 import com.beust.jcommander.Parameter;
 
 @SuppressWarnings({"ConstantConditions", "FieldCanBeLocal"})
 public class Args {
-
-	public static final String PROPERTY_JSON_OUTPUT_RESOURCE = "martini.standalone.json.output.resource";
-	public static final String PROPERTY_PARALLELISM = "martini.engine.parallelism";
 
 	@Parameter(names = {"-h", "--h", "-help", "--help"}, help = true)
 	public boolean help;
@@ -37,9 +34,9 @@ public class Args {
 	public boolean jsonOverwrite = true;
 
 	@Parameter(
-		names = {"-jsonOutput", PROPERTY_JSON_OUTPUT_RESOURCE},
-		description = "URI destination for JSON suite reporting, e.g. file:///tmp/martini.json")
-	public WritableResource jsonOutputResource;
+		names = {"-jsonOutputFile"},
+		description = "JSON output file location for suite reporting, e.g. /tmp/martini.json")
+	public File jsonOutputFile;
 
 	@Parameter(
 		names = "-configLocations",
@@ -54,7 +51,7 @@ public class Args {
 	public String spelFilter;
 
 	@Parameter(
-		names = {"-parallelism", PROPERTY_PARALLELISM},
+		names = {"-parallelism"},
 		description = "Fork Join Pool parallelism (defaulted to available processors); must be greater than zero",
 		validateValueWith = GreaterThanZeroValidator.class
 	)

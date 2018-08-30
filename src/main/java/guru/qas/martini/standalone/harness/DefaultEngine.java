@@ -34,7 +34,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.MessageSource;
-import org.springframework.core.env.Environment;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
@@ -56,6 +55,7 @@ import static guru.qas.martini.standalone.harness.JsonSuiteMarshaller.LOGGER;
 @Configurable
 public class DefaultEngine implements Engine, ApplicationContextAware {
 
+	protected final Args args;
 	protected final Mixologist mixologist;
 	protected final EventManager eventManager;
 	protected final int pollIntervalMs;
@@ -64,10 +64,12 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 
 	@Autowired
 	DefaultEngine(
+		Args args,
 		Mixologist mixologist,
 		EventManager eventManager,
 		@Value("${martini.engine.poll.interval.ms:2000}") int pollIntervalMs
 	) {
+		this.args = args;
 		this.mixologist = mixologist;
 		this.eventManager = eventManager;
 		this.pollIntervalMs = pollIntervalMs;
@@ -111,11 +113,6 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		}
 	}
 
-	protected int getParallelism() {
-		Environment environment = applicationContext.getEnvironment();
-		return environment.getRequiredProperty(Args.PROPERTY_PARALLELISM, Integer.class);
-	}
-
 	protected Collection<Martini> getMartinis(String filter) {
 		String trimmed = null == filter ? "" : filter.trim();
 		Collection<Martini> martinis = trimmed.isEmpty() ?
@@ -136,7 +133,6 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		SuiteIdentifier suiteIdentifier,
 		final List<Martini> martinis
 	) {
-		int parallelism = getParallelism();
 		List<Future<?>> futures = Lists.newArrayList();
 
 		return () -> {
@@ -146,7 +142,7 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 					futures.removeIf(Future::isDone);
 					concurrency = futures.size();
 
-					if (concurrency < parallelism) {
+					if (concurrency < args.parallelism) {
 						Runnable task = () -> {
 							Martini next = martinis.isEmpty() ? null : martinis.remove(0);
 							// TODO: check gating!!!
@@ -170,7 +166,7 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 					}
 				}
 
-				if (concurrency >= parallelism) {
+				if (concurrency >= args.parallelism) {
 					try {
 						Thread.sleep(1000);
 					}

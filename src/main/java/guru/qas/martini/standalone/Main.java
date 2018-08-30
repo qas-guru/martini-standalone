@@ -23,22 +23,21 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MutablePropertySources;
-import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.standalone.harness.Engine;
+import guru.qas.martini.standalone.harness.configuration.ExecutorServiceConfiguration;
 import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
-import guru.qas.martini.standalone.jcommander.WritableResourceConverterFactory;
 
 import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 public class Main {
 
-	private final Args args;
+	protected final Args args;
 
 	public Main(Args args) {
 		this.args = checkNotNull(args, "null Args");
@@ -52,54 +51,30 @@ public class Main {
 		}
 	}
 
-	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
-		Engine engine = context.getBean(Engine.class);
-		ExecutorService service = getExecutorService(context);
-		engine.executeSuite(args.spelFilter, service, args.timeoutInMinutes);
-	}
-
 	public ConfigurableApplicationContext getApplicationContext() {
 		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(args.configLocations, false);
-		updateEnvironment(context);
+		addJCommanderArgs(context);
 		context.refresh();
 		context.registerShutdownHook();
 		return context;
 	}
 
-	private void updateEnvironment(ConfigurableApplicationContext context) {
+	private void addJCommanderArgs(ConfigurableApplicationContext context) {
 		ConfigurableEnvironment environment = context.getEnvironment();
 		MutablePropertySources sources = environment.getPropertySources();
 		sources.addLast(new ArgsPropertySource(args));
 	}
 
-	protected ExecutorService getExecutorService(ConfigurableApplicationContext context) {
-		Thread.UncaughtExceptionHandler handler = context.getBean(
-			"martiniUncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
-
-		ExecutorService executorService;
-		if (1 == args.parallelism) {
-			executorService = new InThreadExecutorService(handler, args.awaitTerminationSeconds);
-			context.getBeanFactory().registerSingleton(executorService.getClass().getName(), executorService);
-		}
-		else {
-			ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
-			factory.setParallelism(args.parallelism);
-			factory.setAwaitTerminationSeconds(args.awaitTerminationSeconds);
-			factory.setCommonPool(false);
-			factory.setUncaughtExceptionHandler(handler);
-			factory.afterPropertiesSet();
-			executorService = factory.getObject();
-		}
-		return executorService;
+	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
+		Engine engine = context.getBean(Engine.class);
+		ExecutorService service = context.getBean(ExecutorServiceConfiguration.BEAN_NAME, ExecutorService.class);
+		engine.executeSuite(args.spelFilter, service, args.timeoutInMinutes);
 	}
 
 	public static void main(String[] argv) throws Exception {
-		Args args = new Args();
 		try {
-			JCommander jCommander = JCommander.newBuilder()
-				.addConverterInstanceFactory(new WritableResourceConverterFactory(args))
-				.addObject(args)
-				.build();
+			Args args = new Args();
+			JCommander jCommander = JCommander.newBuilder().addObject(args).build();
 			jCommander.parse(argv);
 			main(args, jCommander);
 		}
@@ -109,7 +84,7 @@ public class Main {
 		}
 	}
 
-	private static void main(Args args, JCommander jCommander) throws Exception {
+	protected static void main(Args args, JCommander jCommander) throws Exception {
 		if (args.help) {
 			jCommander.usage();
 		}
