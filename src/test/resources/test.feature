@@ -39,6 +39,7 @@ Feature: Multithreaded Martini Execution
   Scenario: Eight
     Given a precondition
     When something happens
+    And a gate is encountered
     Then outcome is evaluated
 
   Scenario: Nine

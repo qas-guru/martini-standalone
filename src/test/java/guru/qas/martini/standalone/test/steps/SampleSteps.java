@@ -21,6 +21,8 @@ import java.security.SecureRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import guru.qas.martini.annotation.And;
+import guru.qas.martini.annotation.Gated;
 import guru.qas.martini.annotation.Given;
 import guru.qas.martini.annotation.Steps;
 import guru.qas.martini.annotation.Then;
@@ -46,6 +48,13 @@ public class SampleSteps {
 	public void somethingHappens() {
 		sleep();
 	}
+
+	@Gated(name = "sampleGate")
+	@And("^a gate is encountered$")
+	public void setGate() {
+		sleep();
+	}
+
 
 	@Then("^outcome is evaluated$")
 	public void outcomeIsEvaluated() {
