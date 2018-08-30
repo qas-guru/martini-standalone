@@ -96,14 +96,15 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 			SimpleTimeLimiter limiter = SimpleTimeLimiter.create(executorService);
 			limiter.runWithTimeout(runnable, timeoutInMinutes, TimeUnit.MINUTES);
 			executorService.shutdown();
+			// TODO: executorService.awaitTermination(timeout, unit); // remaining time from timeoutInMinutes
 		}
 		catch (InterruptedException e) {
 			LOGGER.error("suite interrupted", e);
-			executorService.shutdownNow();
+			executorService.shutdownNow(); // awaitTerminationSeconds = 5 *
 		}
 		catch (TimeoutException e) {
 			LOGGER.error("suite timed out", e);
-			executorService.shutdownNow();
+			executorService.shutdownNow(); // awaitTerminationSeconds = 5 *
 		}
 		finally {
 			eventManager.publishAfterSuite(this, suiteIdentifier);
@@ -134,9 +135,8 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		ExecutorService service,
 		SuiteIdentifier suiteIdentifier,
 		final List<Martini> martinis
-	) { // TODO: implement me
+	) {
 		int parallelism = getParallelism();
-		System.out.println("PARALLELISM: " + parallelism);
 		List<Future<?>> futures = Lists.newArrayList();
 
 		return () -> {
@@ -145,13 +145,14 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 				synchronized (futures) {
 					futures.removeIf(Future::isDone);
 					concurrency = futures.size();
+
 					if (concurrency < parallelism) {
 						Runnable task = () -> {
 							Martini next = martinis.isEmpty() ? null : martinis.remove(0);
 							// TODO: check gating!!!
 							Thread thread = Thread.currentThread();
 							String threadName = thread.getName();
-							System.out.printf("Thread %s next: %s", threadName, next);
+							System.out.printf("Thread %s next: %s\n", threadName, next);
 
 							if (null != next) {
 								String groupName = thread.getThreadGroup().getName();
