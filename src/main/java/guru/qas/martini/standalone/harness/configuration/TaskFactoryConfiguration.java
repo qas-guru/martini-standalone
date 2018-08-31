@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,20 +22,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.standalone.harness.DefaultEngine;
-import guru.qas.martini.standalone.harness.Engine;
+import guru.qas.martini.standalone.harness.DefaultTaskFactory;
+import guru.qas.martini.standalone.harness.TaskFactory;
 
-@SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-class EngineConfiguration {
+public class TaskFactoryConfiguration {
 
 	@Bean
-	protected Engine getEngine(
+	protected TaskFactory getTaskFactory(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.engine.impl:#{null}}") Class<? extends Engine> implementation
+		@Value("${martini.engine.task.factory.impl:#{null}}") Class<? extends TaskFactory> implementation
 	) {
 		return null == implementation ?
-			beanFactory.createBean(DefaultEngine.class) : beanFactory.createBean(implementation);
+			beanFactory.createBean(DefaultTaskFactory.class) : beanFactory.createBean(implementation);
+
 	}
 }

@@ -57,7 +57,7 @@ public class Main {
 		return context;
 	}
 
-	private void addJCommanderArgs(ConfigurableApplicationContext context) {
+	protected void addJCommanderArgs(ConfigurableApplicationContext context) {
 		ConfigurableEnvironment environment = context.getEnvironment();
 		MutablePropertySources sources = environment.getPropertySources();
 		sources.addLast(new ArgsPropertySource(args));
