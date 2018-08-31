@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,14 +96,14 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 	}
 
 	@Override
-	public void executeSuite(@Nullable String filter, @Nullable Integer timeoutInMinutes) {
+	public void executeSuite() {
 		eventManager.publishBeforeSuite(this, suiteIdentifier);
-		Collection<Martini> martinis = getMartinis(filter);
+		Collection<Martini> martinis = getMartinis();
 
 		try {
 			Runnable runnable = getRunnable(martinis);
-			if (null != timeoutInMinutes && 0 < timeoutInMinutes) {
-				executeWithTimeLimit(runnable, timeoutInMinutes);
+			if (args.timeoutInMinutes > 0) {
+				executeWithTimeLimit(runnable, args.timeoutInMinutes);
 			}
 			else {
 				runnable.run();
@@ -128,10 +127,10 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		}
 	}
 
-	protected Collection<Martini> getMartinis(String filter) {
-		String trimmed = null == filter ? "" : filter.trim();
+	protected Collection<Martini> getMartinis() {
+		String trimmed = null == args.spelFilter ? "" : args.spelFilter.trim();
 		Collection<Martini> martinis = trimmed.isEmpty() ?
-			mixologist.getMartinis() : mixologist.getMartinis(filter);
+			mixologist.getMartinis() : mixologist.getMartinis(trimmed);
 
 		if (martinis.isEmpty()) {
 			MessageSource source = MessageSources.getMessageSource(this.getClass());
@@ -203,7 +202,6 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 									releasePermits(martini);
 								}
 							}
-
 						};
 						futures.add(executorService.submit(task));
 					}

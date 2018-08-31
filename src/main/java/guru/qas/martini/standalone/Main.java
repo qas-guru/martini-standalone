@@ -65,7 +65,7 @@ public class Main {
 
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
 		Engine engine = context.getBean(Engine.class);
-		engine.executeSuite(args.spelFilter, args.timeoutInMinutes);
+		engine.executeSuite();
 	}
 
 	public static void main(String[] argv) throws Exception {

@@ -18,12 +18,7 @@ package guru.qas.martini.standalone.harness;
 
 import java.util.concurrent.ExecutionException;
 
-import javax.annotation.Nullable;
-
 public interface Engine {
 
-	void executeSuite(
-		@Nullable String spelFilter,
-		@Nullable Integer timeoutInMinutes
-	) throws InterruptedException, ExecutionException;
+	void executeSuite() throws InterruptedException, ExecutionException;
 }
