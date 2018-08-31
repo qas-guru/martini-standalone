@@ -16,9 +16,11 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -48,15 +50,6 @@ public class GateIndex {
 
 	public int gateCount() {
 		return Integer.MAX_VALUE - index.keySet().size();
-	}
-
-	public Collection<MartiniGate> getUniquedByName() {
-		LinkedHashMap<String, MartiniGate> uniqued = new LinkedHashMap<>();
-		gates.forEach(gate -> {
-			String name = gate.getName();
-			uniqued.putIfAbsent(name, gate);
-		});
-		return uniqued.values();
 	}
 
 	public static Builder builder() {

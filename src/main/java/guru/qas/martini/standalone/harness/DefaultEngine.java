@@ -16,11 +16,13 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Stack;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -40,6 +42,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.MessageSource;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 
@@ -157,57 +160,28 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 						Runnable task = () -> {
 
 							Martini martini = null;
-							Stack<MartiniGate> permitted = new Stack<>();
 
 							synchronized (martinis) {
 								for (Iterator<Martini> i = martinis.iterator(); null == martini && i.hasNext(); ) {
 									Martini candidate = i.next();
-									logger.debug("attempting to gate Martini {}", candidate);
 
-									GateIndex gateIndex = GateIndex.builder().build(candidate);
-									Collection<MartiniGate> gates = gateIndex.getUniquedByName();
+									Set<String> gateNames = new HashSet<>();
+									boolean locked = candidate.getGates().stream()
+										.filter(gate -> {
+											String name = gate.getName();
+											return gateNames.add(name);
+										})
+										.map(MartiniGate::enter)
+										.filter(permitted -> !permitted)
+										.findFirst()
+										.orElse(true);
 
-									boolean locked = true;
-									for (Iterator<MartiniGate> j = gates.iterator(); locked && j.hasNext(); ) {
-										MartiniGate gate = j.next();
-
-										try {
-											locked = gate.enter();
-											if (locked) {
-												logger.info("locked gate {}", gate);
-												permitted.push(gate);
-											}
-										}
-										finally {
-											if (!locked) {
-												while (!permitted.isEmpty()) {
-													MartiniGate permittedGate = permitted.pop();
-													try {
-														permittedGate.leave();
-														logger.info("left gate {}", permittedGate);
-													}
-													catch (Exception e) {
-														logger.warn("unable to leave MartiniGate: {}", permittedGate, e);
-													}
-												}
-											}
-										}
+									if (!locked) {
+										releasePermits(candidate);
 									}
-									if (locked) {
-										if (!martinis.remove(candidate)) {
-											while (!permitted.isEmpty()) {
-												MartiniGate gate = permitted.pop();
-												try {
-													gate.leave();
-												}
-												catch (Exception e) {
-													logger.warn("unable to leave MartiniGate: {}", gate, e);
-												}
-											}
-										}
-										else {
-											martini = candidate;
-										}
+									else {
+										i.remove();
+										martini = candidate;
 									}
 								}
 							}
@@ -225,14 +199,8 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 								}
 							}
 							finally {
-								while (!permitted.isEmpty()) {
-									MartiniGate gate = permitted.pop();
-									try {
-										gate.leave();
-									}
-									catch (Exception e) {
-										logger.warn("unable to leave MartiniGate: {}", gate, e);
-									}
+								if (null != martini) {
+									releasePermits(martini);
 								}
 							}
 
@@ -252,6 +220,12 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 				futures.forEach(future -> future.cancel(true));
 			}
 		};
+	}
+
+	protected void releasePermits(Martini martini) {
+		Collection<MartiniGate> gates = martini.getGates();
+		ArrayList<MartiniGate> gateList = Lists.newArrayList(gates);
+		Lists.reverse(gateList).forEach(MartiniGate::leave);
 	}
 
 	protected MartiniResult getMartiniResult(SuiteIdentifier identifier, Martini martini) {
