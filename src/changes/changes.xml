@@ -14,6 +14,7 @@
 			<action dev="pcurich" type="update">
 				Updating martini-core version.
 				Accommodating gated concept.
+				Renaming some classes.
 			</action>
 		</release>
 		<release version="2.5.0" date="2018-08-21" description="Release 2.5.0">

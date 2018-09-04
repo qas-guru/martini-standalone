@@ -106,8 +106,6 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 
 		Thread thread = Thread.currentThread();
 		String threadName = thread.getName();
-		System.out.printf("Thread %s next: %s\n", threadName, martini);
-
 		return Optional.ofNullable(martini);
 	}
 
