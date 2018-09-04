@@ -46,7 +46,9 @@ public class MainTest {
 	}
 
 	protected Multimap<String, String> executeWithParallelism(int parallelism) throws ExecutionException, InterruptedException {
-		String[] argv = new String[]{"-parallelism", String.valueOf(parallelism)};
+		String[] argv = new String[]{
+			"-parallelism", String.valueOf(parallelism),
+			"-configLocations", "classpath*:**/applicationContext.xml,classpath*:/bogus.xml"};
 		Args args = new Args();
 		JCommander.newBuilder().addObject(args).build().parse(argv);
 		Main application = new Main(args);

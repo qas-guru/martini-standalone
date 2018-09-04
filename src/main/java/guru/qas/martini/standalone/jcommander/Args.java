@@ -17,8 +17,10 @@ limitations under the License.
 package guru.qas.martini.standalone.jcommander;
 
 import java.io.File;
+import java.util.List;
 
 import com.beust.jcommander.Parameter;
+import com.google.common.collect.Lists;
 
 @SuppressWarnings({"ConstantConditions", "FieldCanBeLocal"})
 public class Args {
@@ -42,7 +44,7 @@ public class Args {
 		names = "-configLocations",
 		variableArity = true,
 		description = "list of Spring configuration files")
-	public String[] configLocations = new String[]{"classpath*:**/applicationContext.xml"};
+	public List<String> configLocations = Lists.newArrayList("classpath*:**/applicationContext.xml");
 
 	@Parameter(
 		names = "-spelFilter",

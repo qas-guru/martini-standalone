@@ -50,7 +50,8 @@ public class Main {
 	}
 
 	public ConfigurableApplicationContext getApplicationContext() {
-		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(args.configLocations, false);
+		String[] locations = args.configLocations.toArray(new String[0]);
+		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(locations, false);
 		addJCommanderArgs(context);
 		context.refresh();
 		context.registerShutdownHook();
