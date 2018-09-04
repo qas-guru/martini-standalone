@@ -131,7 +131,6 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 	}
 
 	protected void execute(Martini martini) {
-		System.out.println("THREAD: " + Thread.currentThread());
 		try {
 			Callable<MartiniResult> callable = new MartiniCallable(suiteIdentifier, martini);
 			AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();

@@ -22,20 +22,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.standalone.harness.DefaultEngine;
-import guru.qas.martini.standalone.harness.Engine;
+import guru.qas.martini.standalone.harness.DefaultMartiniStandaloneEngine;
+import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
 
 @SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-class EngineConfiguration {
+class MartiniStandaloneEngineConfiguration {
 
 	@Bean
-	protected Engine getEngine(
+	protected MartiniStandaloneEngine getEngine(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.engine.impl:#{null}}") Class<? extends Engine> implementation
+		@Value("${martini.engine.impl:#{null}}") Class<? extends MartiniStandaloneEngine> implementation
 	) {
 		return null == implementation ?
-			beanFactory.createBean(DefaultEngine.class) : beanFactory.createBean(implementation);
+			beanFactory.createBean(DefaultMartiniStandaloneEngine.class) : beanFactory.createBean(implementation);
 	}
 }

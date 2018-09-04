@@ -18,7 +18,7 @@ package guru.qas.martini.standalone.harness;
 
 import java.util.concurrent.ExecutionException;
 
-public interface Engine {
+public interface MartiniStandaloneEngine {
 
 	void executeSuite() throws InterruptedException, ExecutionException;
 }

@@ -26,7 +26,7 @@ import org.springframework.core.env.MutablePropertySources;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
-import guru.qas.martini.standalone.harness.Engine;
+import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
 import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
 
@@ -64,7 +64,7 @@ public class Main {
 	}
 
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
-		Engine engine = context.getBean(Engine.class);
+		MartiniStandaloneEngine engine = context.getBean(MartiniStandaloneEngine.class);
 		engine.executeSuite();
 	}
 

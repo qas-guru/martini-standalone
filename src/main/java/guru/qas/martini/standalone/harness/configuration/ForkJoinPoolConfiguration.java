@@ -16,7 +16,7 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -28,27 +28,26 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 
 import guru.qas.martini.standalone.jcommander.Args;
 
 @SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-public class ExecutorServiceConfiguration implements DisposableBean {
+public class ForkJoinPoolConfiguration implements DisposableBean {
 
-	protected static final Logger LOGGER = LoggerFactory.getLogger(ExecutorServiceConfiguration.class);
+	protected static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinPoolConfiguration.class);
 
-	public static final String BEAN_NAME = "martiniExecutorService";
+	public static final String BEAN_NAME = "martiniForkJoinPool";
 
 	protected final AutowireCapableBeanFactory beanFactory;
 	protected final Args args;
 
 	protected final Thread.UncaughtExceptionHandler exceptionHandler;
-	protected ExecutorService executorService;
+	protected ForkJoinPool forkJoinPool;
 
 	@Autowired
-	ExecutorServiceConfiguration(
+	ForkJoinPoolConfiguration(
 		AutowireCapableBeanFactory beanFactory,
 		Args args,
 		@Qualifier(UncaughtExceptionHandlerConfiguration.BEAN_NAME) Thread.UncaughtExceptionHandler exceptionHandler
@@ -59,36 +58,19 @@ public class ExecutorServiceConfiguration implements DisposableBean {
 	}
 
 	@Bean(name = BEAN_NAME)
-	ExecutorService getExecutorService() {
-		LOGGER.info("creating ExecutorService with parallelization {}", args.parallelism);
-		return 1 == args.parallelism ? getInThreadExecutorService() : getForkJoinExecutorService();
-	}
-
-	protected ExecutorService getInThreadExecutorService() {
-		executorService = beanFactory.createBean(InThreadExecutorService.class);
-		return executorService;
-	}
-
-	protected ExecutorService getForkJoinExecutorService() {
-		ForkJoinPoolFactoryBean factory = new ForkJoinPoolFactoryBean();
-		factory.setParallelism(args.parallelism);
-		factory.setAwaitTerminationSeconds(args.awaitTerminationSeconds);
-		factory.setCommonPool(false);
-		factory.setUncaughtExceptionHandler(exceptionHandler);
-		factory.afterPropertiesSet();
-		executorService = factory.getObject();
-		return executorService;
+	ForkJoinPool getForkJoinPool() {
+		LOGGER.info("creating ForkJoinPool with parallelization {}", args.parallelism);
+		ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
+		forkJoinPool = new ForkJoinPool(args.parallelism, factory, exceptionHandler, true);
+		return forkJoinPool;
 	}
 
 	@Override
-	public void destroy() throws Exception {
-		if (null != executorService && !DisposableBean.class.isInstance(executorService) && !executorService.isShutdown()) {
-			if (args.awaitTerminationSeconds > 0) {
-				executorService.shutdown();
-				executorService.awaitTermination(args.awaitTerminationSeconds, TimeUnit.SECONDS);
-			}
-			else {
-				executorService.shutdownNow();
+	public void destroy() throws InterruptedException {
+		if (null != forkJoinPool && !forkJoinPool.isShutdown()) {
+			forkJoinPool.shutdown();
+			if (!forkJoinPool.awaitTermination(args.awaitTerminationSeconds, TimeUnit.SECONDS)) {
+				forkJoinPool.shutdownNow();
 			}
 		}
 	}

@@ -16,28 +16,70 @@ limitations under the License.
 
 package guru.qas.martini.standalone;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.context.ConfigurableApplicationContext;
 import org.testng.annotations.Test;
 
 import com.beust.jcommander.JCommander;
+import com.google.common.collect.Multimap;
 
 import guru.qas.martini.standalone.jcommander.Args;
 import guru.qas.martini.standalone.test.TestListener;
 
+import static com.google.common.base.Preconditions.checkState;
+
+@SuppressWarnings("WeakerAccess")
 public class MainTest {
 
 	@Test
-	public void testMultithreading() throws Exception {
+	public void testMultiThreaded() throws Exception {
+		Multimap<String, String> executionIndex = executeWithParallelism(10);
 
-		String[] argv = new String[]{"-parallelism", "10"};
+		Set<String> threadNames = executionIndex.keySet();
+		checkState(1 < threadNames.size(), "all tests run by a single thread");
+
+		assertScenariosExecutedOnce(executionIndex);
+	}
+
+	protected Multimap<String, String> executeWithParallelism(int parallelism) throws ExecutionException, InterruptedException {
+		String[] argv = new String[]{"-parallelism", String.valueOf(parallelism)};
 		Args args = new Args();
 		JCommander.newBuilder().addObject(args).build().parse(argv);
 		Main application = new Main(args);
 
-		ConfigurableApplicationContext context = application.getApplicationContext();
-		TestListener listener = context.getBean(TestListener.class);
-		application.executeSuite(context);
+		Multimap<String, String> executionIndex;
 
-		listener.assertMultithreaded();
+		try (ConfigurableApplicationContext context = application.getApplicationContext()) {
+			TestListener listener = context.getBean(TestListener.class);
+			application.executeSuite(context);
+			executionIndex = listener.getExecutionIndex();
+		}
+
+		checkState(!executionIndex.isEmpty(), "no AfterScenarioEvent objects handled");
+		return executionIndex;
+	}
+
+	protected void assertScenariosExecutedOnce(Multimap<String, String> executionIndex) {
+		Collection<String> scenarios = executionIndex.values();
+		int scenariosExecuted = scenarios.size();
+
+		Set<String> uniq = new HashSet<>(scenarios);
+		int uniqueScenarios = uniq.size();
+		checkState(uniqueScenarios == scenariosExecuted, "scenarios executed more than once");
+	}
+
+	@Test
+	public void testSingleThreaded() throws Exception {
+		Multimap<String, String> executionIndex = executeWithParallelism(1);
+
+		Set<String> threadNames = executionIndex.keySet();
+		int threadCount = threadNames.size();
+		checkState(1 == threadCount, "tests executed by more than one thread: %s", threadCount);
+
+		assertScenariosExecutedOnce(executionIndex);
 	}
 }

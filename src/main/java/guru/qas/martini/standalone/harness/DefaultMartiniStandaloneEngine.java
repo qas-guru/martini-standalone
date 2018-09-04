@@ -20,10 +20,8 @@ import java.util.Collection;
 
 import java.util.Comparator;
 
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -50,13 +48,15 @@ import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.i18n.MessageSources;
 
 import guru.qas.martini.runtime.event.EventManager;
-import guru.qas.martini.standalone.harness.configuration.ExecutorServiceConfiguration;
+import guru.qas.martini.standalone.harness.configuration.ForkJoinPoolConfiguration;
 import guru.qas.martini.standalone.harness.configuration.MartiniComparatorConfiguration;
 import guru.qas.martini.standalone.jcommander.Args;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 @SuppressWarnings("WeakerAccess")
 @Configurable
-public class DefaultEngine implements Engine, ApplicationContextAware {
+public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, ApplicationContextAware {
 
 	protected final Args args;
 	protected final Mixologist mixologist;
@@ -64,20 +64,20 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 	protected final Comparator<Martini> comparator;
 	protected final TaskFactory taskFactory;
 	protected final EventManager eventManager;
-	protected final ExecutorService executorService;
+	protected final ForkJoinPool forkJoinPool;
 	protected final Logger logger;
 
 	protected ApplicationContext applicationContext;
 
 	@Autowired
-	DefaultEngine(
+	DefaultMartiniStandaloneEngine(
 		Args args,
 		Mixologist mixologist,
 		SuiteIdentifier suiteIdentifier,
 		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> comparator,
 		TaskFactory taskFactory,
 		EventManager eventManager,
-		@Qualifier(ExecutorServiceConfiguration.BEAN_NAME) ExecutorService executorService
+		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool
 	) {
 		this.args = args;
 		this.mixologist = mixologist;
@@ -85,7 +85,7 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 		this.comparator = comparator;
 		this.taskFactory = taskFactory;
 		this.eventManager = eventManager;
-		this.executorService = executorService;
+		this.forkJoinPool = forkJoinPool;
 		this.logger = LoggerFactory.getLogger(this.getClass());
 	}
 
@@ -115,8 +115,8 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 
 	protected void executeWithTimeLimit(Runnable runnable, int timeoutInMinutes) {
 		try {
-			SimpleTimeLimiter limiter = SimpleTimeLimiter.create(executorService);
-			limiter.runWithTimeout(runnable, timeoutInMinutes, TimeUnit.MINUTES);
+			SimpleTimeLimiter limiter = SimpleTimeLimiter.create(ForkJoinPool.commonPool());
+			limiter.runWithTimeout(runnable, timeoutInMinutes, MINUTES);
 		}
 		catch (InterruptedException e) {
 			throw getMartiniException(e);
@@ -144,32 +144,24 @@ public class DefaultEngine implements Engine, ApplicationContextAware {
 
 	protected Runnable getRunnable(Collection<Martini> martiniCollection) {
 		ConcurrentLinkedDeque<Martini> martinis = new ConcurrentLinkedDeque<>(martiniCollection);
-		ConcurrentLinkedDeque<Future> futures = new ConcurrentLinkedDeque<>();
 
 		return () -> {
 			try {
 				Monitor monitor = new Monitor();
 				while (!martinis.isEmpty()) {
 
-					futures.stream()
-						.filter(future -> future.isCancelled() || future.isDone())
-						.forEach(futures::remove);
-
-					if (futures.size() < args.parallelism) {
-						Runnable task = taskFactory.getTask(monitor, martinis);
-						Future<?> future = executorService.submit(task);
-						futures.add(future);
+					if (forkJoinPool.hasQueuedSubmissions()) {
+						Thread.sleep(250);
 					}
 					else {
-						Thread.sleep(1000);
+						Runnable task = taskFactory.getTask(monitor, martinis);
+						forkJoinPool.submit(task);
 					}
 				}
+				forkJoinPool.awaitQuiescence(args.timeoutInMinutes, TimeUnit.MINUTES);
 			}
 			catch (InterruptedException e) {
 				throw getMartiniException(e);
-			}
-			finally {
-				futures.forEach(future -> future.cancel(true));
 			}
 		};
 	}
