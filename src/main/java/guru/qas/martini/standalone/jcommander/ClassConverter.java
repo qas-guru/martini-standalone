@@ -18,24 +18,43 @@ package guru.qas.martini.standalone.jcommander;
 
 import org.springframework.context.MessageSource;
 
-import com.beust.jcommander.IValueValidator;
+import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.MartiniException;
 import guru.qas.martini.i18n.MessageSources;
 
-public class GreaterThanZeroValidator implements IValueValidator<Number> {
+@SuppressWarnings("WeakerAccess")
+public class ClassConverter implements IStringConverter<Class> {
 
 	@Override
-	public void validate(String s, Number number) throws ParameterException {
-		if (0 >= number.longValue()) {
+	public Class convert(String s) throws ParameterException {
+		String trimmed = null == s ? "" : s.trim();
+		try {
+			assertArgumentProvided(trimmed);
+			return Class.forName(s);
+		}
+		catch (ClassNotFoundException e) {
 			MessageSource messageSource = MessageSources.getMessageSource(getClass());
 			MartiniException cause = new MartiniException.Builder()
-				.setKey("invalid.parameter")
-				.setArguments(s, number)
+				.setCause(e)
+				.setKey("invalid.implementation")
+				.setArguments(s)
 				.setMessageSource(messageSource)
 				.build();
 			throw new ParameterException(cause);
+		}
+	}
+
+	protected void assertArgumentProvided(String s) {
+
+		if (s.isEmpty() || s.startsWith("-")) {
+			MessageSource messageSource = MessageSources.getMessageSource(getClass());
+			throw new MartiniException.Builder()
+				.setKey("missing.implementation")
+				.setArguments(s)
+				.setMessageSource(messageSource)
+				.build();
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2017 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,14 +16,13 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.standalone.harness.DefaultMartiniStandaloneEngine;
 import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
+import guru.qas.martini.standalone.harness.Options;
 
 @SuppressWarnings("WeakerAccess")
 @Configuration
@@ -33,9 +32,9 @@ class MartiniStandaloneEngineConfiguration {
 	@Bean
 	protected MartiniStandaloneEngine getEngine(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.engine.impl:#{null}}") Class<? extends MartiniStandaloneEngine> implementation
+		Options options
 	) {
-		return null == implementation ?
-			beanFactory.createBean(DefaultMartiniStandaloneEngine.class) : beanFactory.createBean(implementation);
+		Class<? extends MartiniStandaloneEngine> implementation = options.getEngineImplementation();
+		return beanFactory.createBean(implementation);
 	}
 }

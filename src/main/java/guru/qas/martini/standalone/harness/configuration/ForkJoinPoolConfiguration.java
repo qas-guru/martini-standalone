@@ -19,58 +19,75 @@ package guru.qas.martini.standalone.harness.configuration;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.harness.Options;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-public class ForkJoinPoolConfiguration implements DisposableBean {
+public class ForkJoinPoolConfiguration implements DisposableBean, ApplicationContextAware {
 
 	protected static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinPoolConfiguration.class);
 
 	public static final String BEAN_NAME = "martiniForkJoinPool";
 
-	protected final AutowireCapableBeanFactory beanFactory;
-	protected final Args args;
-
+	protected final Options options;
 	protected final Thread.UncaughtExceptionHandler exceptionHandler;
+
+	protected AutowireCapableBeanFactory beanFactory;
 	protected ForkJoinPool forkJoinPool;
 
 	@Autowired
 	ForkJoinPoolConfiguration(
-		AutowireCapableBeanFactory beanFactory,
-		Args args,
+		Options args,
 		@Qualifier(UncaughtExceptionHandlerConfiguration.BEAN_NAME) Thread.UncaughtExceptionHandler exceptionHandler
 	) {
-		this.beanFactory = beanFactory;
-		this.args = args;
+		this.options = args;
 		this.exceptionHandler = exceptionHandler;
+	}
+
+	@Override
+	public void setApplicationContext(@Nonnull ApplicationContext applicationContext) throws BeansException {
+		checkNotNull(applicationContext, "null ApplicatinoContext");
+		this.beanFactory = applicationContext.getAutowireCapableBeanFactory();
 	}
 
 	@Bean(name = BEAN_NAME)
 	ForkJoinPool getForkJoinPool() {
-		LOGGER.info("creating ForkJoinPool with parallelization {}", args.parallelism);
+		LOGGER.info("creating ForkJoinPool with parallelization {}", options.getParallelism());
 		ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
-		forkJoinPool = new ForkJoinPool(args.parallelism, factory, exceptionHandler, true);
+		forkJoinPool = new ForkJoinPool(options.getParallelism(), factory, exceptionHandler, true);
 		return forkJoinPool;
 	}
 
 	@Override
 	public void destroy() throws InterruptedException {
 		if (null != forkJoinPool && !forkJoinPool.isShutdown()) {
-			forkJoinPool.shutdown();
-			if (!forkJoinPool.awaitTermination(args.awaitTerminationSeconds, TimeUnit.SECONDS)) {
+			Long seconds = options.getAwaitTerminationSeconds().orElse(null);
+			if (null == seconds) {
 				forkJoinPool.shutdownNow();
+			}
+			else {
+				forkJoinPool.shutdown();
+				if (!forkJoinPool.awaitTermination(seconds, TimeUnit.SECONDS)) {
+					forkJoinPool.shutdownNow();
+				}
 			}
 		}
 	}

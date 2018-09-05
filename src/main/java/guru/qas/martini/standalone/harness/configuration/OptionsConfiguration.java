@@ -21,15 +21,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 
-import guru.qas.martini.standalone.jcommander.Args;
-import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
+import guru.qas.martini.standalone.harness.Options;
+import guru.qas.martini.standalone.jcommander.OptionsPropertySource;
 
 @Configuration
 @Lazy
-class ArgsConfiguration {
+class OptionsConfiguration {
 
-	@Bean(name = "martiniEngineArgs")
-	Args getArgs(Environment environment) {
-		return environment.getProperty(ArgsPropertySource.PROPERTY, Args.class);
+	@Bean
+	Options getOptions(Environment environment) {
+		return environment.getProperty(OptionsPropertySource.PROPERTY, Options.class);
 	}
 }

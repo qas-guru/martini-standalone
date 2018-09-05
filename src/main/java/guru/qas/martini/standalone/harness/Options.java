@@ -16,5 +16,48 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
+import java.io.File;
+import java.util.Comparator;
+import java.util.Optional;
+
+import javax.annotation.Nonnull;
+
+import guru.qas.martini.Martini;
+import guru.qas.martini.event.SuiteIdentifier;
+
 public interface Options {
+
+	@Nonnull
+	String[] getSpringConfigurationLocations();
+
+	boolean isUnimplementedStepsFatal();
+
+	Optional<Long> getTimeoutInMinutes();
+
+	Optional<String> getSpelFilter();
+
+	long getJobPoolPollIntervalMs();
+
+	Optional<File> getJsonOutputFile();
+
+	int getParallelism();
+
+	Optional<Long> getAwaitTerminationSeconds();
+
+	boolean isJsonOutputFileOverwrite();
+
+	@Nonnull
+	Class<? extends Comparator<Martini>> getComparatorImplementation();
+
+	@Nonnull
+	Class<? extends MartiniStandaloneEngine> getEngineImplementation();
+
+	@Nonnull
+	Class<? extends SuiteIdentifier> getSuiteIdentifierImplementation();
+
+	@Nonnull
+	Class<? extends TaskFactory> getTaskFactoryImplementation();
+
+	@Nonnull
+	Class<? extends Thread.UncaughtExceptionHandler> getUncaughtExceptionHandlerImplementation();
 }

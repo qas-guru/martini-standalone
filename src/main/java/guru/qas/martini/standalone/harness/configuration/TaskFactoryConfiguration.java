@@ -16,13 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.standalone.harness.DefaultTaskFactory;
+import guru.qas.martini.standalone.harness.Options;
 import guru.qas.martini.standalone.harness.TaskFactory;
 
 @Configuration
@@ -32,10 +31,9 @@ public class TaskFactoryConfiguration {
 	@Bean
 	protected TaskFactory getTaskFactory(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.engine.task.factory.impl:#{null}}") Class<? extends TaskFactory> implementation
+		Options options
 	) {
-		return null == implementation ?
-			beanFactory.createBean(DefaultTaskFactory.class) : beanFactory.createBean(implementation);
-
+		Class<? extends TaskFactory> implementation = options.getTaskFactoryImplementation();
+		return beanFactory.createBean(implementation);
 	}
 }

@@ -18,14 +18,13 @@ package guru.qas.martini.standalone.harness.configuration;
 
 import java.util.Comparator;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
 import guru.qas.martini.Martini;
-import guru.qas.martini.standalone.harness.GatedMartiniComparator;
+import guru.qas.martini.standalone.harness.Options;
 
 @Configuration
 @Lazy
@@ -36,11 +35,9 @@ public class MartiniComparatorConfiguration {
 	@Bean(name = BEAN_NAME)
 	Comparator<Martini> getMartiniComparator(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.prioritizaton.ordering.impl:#{null}}") Class<? extends Comparator> implementation
+		Options options
 	) {
-
-		return null == implementation ?
-			beanFactory.createBean(GatedMartiniComparator.class) :
-			beanFactory.createBean(implementation);
+		Class<? extends Comparator<Martini>> implementation = options.getComparatorImplementation();
+		return beanFactory.createBean(implementation);
 	}
 }

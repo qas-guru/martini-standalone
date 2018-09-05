@@ -16,6 +16,7 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
+import java.io.File;
 import java.nio.file.OpenOption;
 
 import org.springframework.context.annotation.Bean;
@@ -23,7 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.WritableResource;
 
-import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.harness.Options;
 import guru.qas.martini.standalone.io.OptionedFileSystemResource;
 
 import static java.nio.file.StandardOpenOption.*;
@@ -35,8 +36,10 @@ public class JsonOutputResourceConfiguration {
 	public static final String BEAN_NAME = "jsonOutputResource";
 
 	@Bean(name = BEAN_NAME)
-	WritableResource getJsonOutputResource(Args args) {
-		OpenOption[] options = new OpenOption[]{args.jsonOverwrite ? CREATE : CREATE_NEW, TRUNCATE_EXISTING};
-		return new OptionedFileSystemResource(args.jsonOutputFile, options);
+	WritableResource getJsonOutputResource(Options options) {
+		File file = options.getJsonOutputFile().orElseThrow(() -> new IllegalStateException("null File"));
+		OpenOption[] openOptions = new OpenOption[]{
+			options.isJsonOutputFileOverwrite() ? CREATE : CREATE_NEW, TRUNCATE_EXISTING};
+		return new OptionedFileSystemResource(file, openOptions);
 	}
 }

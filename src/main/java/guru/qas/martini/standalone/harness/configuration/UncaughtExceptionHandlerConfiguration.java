@@ -16,14 +16,14 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
+import guru.qas.martini.standalone.harness.Options;
 
+@SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
 public class UncaughtExceptionHandlerConfiguration {
@@ -33,10 +33,10 @@ public class UncaughtExceptionHandlerConfiguration {
 	@Bean(name = BEAN_NAME)
 	Thread.UncaughtExceptionHandler getUncaughtExceptionHandler(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.thread.uncaught.exception.handler.impl:#{null}}")
-			Class<? extends Thread.UncaughtExceptionHandler> implementation
+		Options options
 	) {
-		return null == implementation ?
-			beanFactory.createBean(DefaultUncaughtExceptionHandler.class) : beanFactory.createBean(implementation);
+		Class<? extends Thread.UncaughtExceptionHandler> implementation =
+			options.getUncaughtExceptionHandlerImplementation();
+		return beanFactory.createBean(implementation);
 	}
 }

@@ -20,19 +20,22 @@ import javax.annotation.Nonnull;
 
 import org.springframework.core.env.PropertySource;
 
+import guru.qas.martini.standalone.harness.Options;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @SuppressWarnings("WeakerAccess")
-public class ArgsPropertySource extends PropertySource<Args> {
+public class OptionsPropertySource extends PropertySource<Options> {
 
-	public static final String PROPERTY = "martini.engine.jcommander.args";
+	public static final String PROPERTY = "martini.engine.options";
 
-	public ArgsPropertySource(@Nonnull Args source) {
+	public OptionsPropertySource(@Nonnull Options source) {
 		super(PROPERTY, checkNotNull(source, "null Args"));
 	}
 
 	@Override
-	public Object getProperty(String s) {
+	public Object getProperty(@Nonnull String s) {
+		checkNotNull(s, "null String");
 		return PROPERTY.equals(s) ? source : null;
 	}
 }

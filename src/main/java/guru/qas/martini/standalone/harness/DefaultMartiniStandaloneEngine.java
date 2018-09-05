@@ -20,9 +20,9 @@ import java.util.Collection;
 
 import java.util.Comparator;
 
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
@@ -33,7 +33,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.MessageSource;
@@ -51,7 +50,7 @@ import guru.qas.martini.i18n.MessageSources;
 import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.standalone.harness.configuration.ForkJoinPoolConfiguration;
 import guru.qas.martini.standalone.harness.configuration.MartiniComparatorConfiguration;
-import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.step.StepImplementation;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -59,37 +58,34 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 @Configurable
 public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, ApplicationContextAware {
 
-	protected final Args args;
+	protected final Options options;
 	protected final Mixologist mixologist;
 	protected final SuiteIdentifier suiteIdentifier;
 	protected final Comparator<Martini> comparator;
 	protected final TaskFactory taskFactory;
 	protected final EventManager eventManager;
 	protected final ForkJoinPool forkJoinPool;
-	protected final long pollInterval;
 	protected final Logger logger;
 
 	protected ApplicationContext applicationContext;
 
 	@Autowired
 	DefaultMartiniStandaloneEngine(
-		Args args,
+		Options options,
 		Mixologist mixologist,
 		SuiteIdentifier suiteIdentifier,
 		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> comparator,
 		TaskFactory taskFactory,
 		EventManager eventManager,
-		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool,
-		@Value("${martini.fork.join.pool.poll.interval:250}") long pollInterval
+		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool
 	) {
-		this.args = args;
+		this.options = options;
 		this.mixologist = mixologist;
 		this.suiteIdentifier = suiteIdentifier;
 		this.comparator = comparator;
 		this.taskFactory = taskFactory;
 		this.eventManager = eventManager;
 		this.forkJoinPool = forkJoinPool;
-		this.pollInterval = pollInterval;
 		this.logger = LoggerFactory.getLogger(this.getClass());
 	}
 
@@ -105,8 +101,9 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 
 		try {
 			Runnable runnable = getRunnable(martinis);
-			if (args.timeoutInMinutes > 0) {
-				executeWithTimeLimit(runnable, args.timeoutInMinutes);
+			if (options.getTimeoutInMinutes().isPresent()) {
+				Long timeout = options.getTimeoutInMinutes().get();
+				executeWithTimeLimit(runnable, timeout);
 			}
 			else {
 				runnable.run();
@@ -117,7 +114,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		}
 	}
 
-	protected void executeWithTimeLimit(Runnable runnable, int timeoutInMinutes) {
+	protected void executeWithTimeLimit(Runnable runnable, long timeoutInMinutes) {
 		try {
 			SimpleTimeLimiter limiter = SimpleTimeLimiter.create(ForkJoinPool.commonPool());
 			limiter.runWithTimeout(runnable, timeoutInMinutes, MINUTES);
@@ -131,19 +128,39 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 	}
 
 	protected Collection<Martini> getMartinis() {
-		String trimmed = null == args.spelFilter ? "" : args.spelFilter.trim();
-		Collection<Martini> martinis = trimmed.isEmpty() ?
-			mixologist.getMartinis() : mixologist.getMartinis(trimmed);
+		String filter = options.getSpelFilter().orElse(null);
+		Collection<Martini> martinis = null == filter ? mixologist.getMartinis() : mixologist.getMartinis(filter);
 
 		if (martinis.isEmpty()) {
 			MessageSource source = MessageSources.getMessageSource(this.getClass());
 			MartiniException.Builder builder = new MartiniException.Builder().setMessageSource(source);
-			throw trimmed.isEmpty() ?
+			throw null == filter ?
 				builder.setKey("no.martinis.found").build() :
-				builder.setKey("no.martinis.found.for.filter").setArguments(trimmed).build();
+				builder.setKey("no.martinis.found.for.filter").setArguments(filter).build();
+		}
+
+		if (options.isUnimplementedStepsFatal()) {
+			Martini unimplemented = martinis.stream()
+				.filter(this::isUnimplemented)
+				.findFirst()
+				.orElse(null);
+			if (null != unimplemented) {
+				MessageSource source = MessageSources.getMessageSource(this.getClass());
+				throw new MartiniException.Builder()
+					.setMessageSource(source)
+					.setKey("unimplemented.steps")
+					.setArguments(unimplemented)
+					.build();
+			}
 		}
 
 		return Ordering.from(comparator).sortedCopy(martinis);
+	}
+
+	protected boolean isUnimplemented(Martini martini) {
+		return martini.getStepIndex().values().stream()
+			.map(StepImplementation::getMethod)
+			.anyMatch(Objects::isNull);
 	}
 
 	protected Runnable getRunnable(Collection<Martini> martiniCollection) {
@@ -160,18 +177,19 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 					forkJoinPool.submit(task);
 				}
 			}
-			forkJoinPool.awaitQuiescence(args.timeoutInMinutes, TimeUnit.MINUTES);
+
+			while (!forkJoinPool.isQuiescent()) {
+				sleep();
+			}
 		};
 	}
 
 	protected void sleep() {
-		if (pollInterval > 0) {
-			try {
-				Thread.sleep(pollInterval);
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			Thread.sleep(options.getJobPoolPollIntervalMs());
+		}
+		catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

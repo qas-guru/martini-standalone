@@ -23,8 +23,7 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-import guru.qas.martini.standalone.jcommander.Args;
-import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
+import guru.qas.martini.standalone.jcommander.OptionsPropertySource;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -33,8 +32,8 @@ public class JsonSuiteMarshallerRequestedCondition implements Condition {
 	@Override
 	public boolean matches(@Nonnull ConditionContext context, @Nonnull AnnotatedTypeMetadata metadata) {
 		Environment environment = context.getEnvironment();
-		Args args = environment.getProperty(ArgsPropertySource.PROPERTY, Args.class);
-		checkState(null != args, "unable to retrieve Args");
-		return null != args.jsonOutputFile;
+		Options options = environment.getProperty(OptionsPropertySource.PROPERTY, Options.class);
+		checkState(null != options, "unable to retrieve Options");
+		return options.getJsonOutputFile().isPresent();
 	}
 }

@@ -27,18 +27,19 @@ import guru.qas.martini.annotation.Given;
 import guru.qas.martini.annotation.Steps;
 import guru.qas.martini.annotation.Then;
 import guru.qas.martini.annotation.When;
-import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.harness.Options;
 
+@SuppressWarnings("unused") // Referenced by Martini engine.
 @Steps
 public class SampleSteps {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SampleSteps.class);
 
 	private final SecureRandom random;
-	private final Args args;
+	private final Options options;
 
-	SampleSteps(Args args) {
-		this.args = args;
+	SampleSteps(Options options) {
+		this.options = options;
 		random = new SecureRandom();
 	}
 
@@ -58,14 +59,13 @@ public class SampleSteps {
 		sleep();
 	}
 
-
 	@Then("^outcome is evaluated$")
 	public void outcomeIsEvaluated() {
 		sleep();
 	}
 
 	private void sleep() {
-		int millis = 1 == args.parallelism ? 0 : random.nextInt(3000);
+		int millis = 1 == options.getParallelism() ? 0 : random.nextInt(3000);
 		try {
 			Thread.sleep(millis);
 		}

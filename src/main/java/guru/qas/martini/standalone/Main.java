@@ -27,18 +27,19 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
-import guru.qas.martini.standalone.jcommander.Args;
-import guru.qas.martini.standalone.jcommander.ArgsPropertySource;
+import guru.qas.martini.standalone.harness.Options;
+import guru.qas.martini.standalone.jcommander.CommandLineOptions;
+import guru.qas.martini.standalone.jcommander.OptionsPropertySource;
 
 import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 public class Main {
 
-	protected final Args args;
+	protected final Options options;
 
-	public Main(Args args) {
-		this.args = checkNotNull(args, "null Args");
+	public Main(Options options) {
+		this.options = checkNotNull(options, "null Options");
 	}
 
 	public void executeSuite() throws InterruptedException, ExecutionException {
@@ -50,18 +51,18 @@ public class Main {
 	}
 
 	public ConfigurableApplicationContext getApplicationContext() {
-		String[] locations = args.configLocations.toArray(new String[0]);
+		String[] locations = options.getSpringConfigurationLocations();
 		ConfigurableApplicationContext context = new ClassPathXmlApplicationContext(locations, false);
-		addJCommanderArgs(context);
+		addOptions(context);
 		context.refresh();
 		context.registerShutdownHook();
 		return context;
 	}
 
-	protected void addJCommanderArgs(ConfigurableApplicationContext context) {
+	protected void addOptions(ConfigurableApplicationContext context) {
 		ConfigurableEnvironment environment = context.getEnvironment();
 		MutablePropertySources sources = environment.getPropertySources();
-		sources.addLast(new ArgsPropertySource(args));
+		sources.addLast(new OptionsPropertySource(options));
 	}
 
 	public void executeSuite(ConfigurableApplicationContext context) throws ExecutionException, InterruptedException {
@@ -71,10 +72,20 @@ public class Main {
 
 	public static void main(String[] argv) throws Exception {
 		try {
-			Args args = new Args();
-			JCommander jCommander = JCommander.newBuilder().addObject(args).build();
+			CommandLineOptions commandLineOptions = new CommandLineOptions();
+			JCommander jCommander = JCommander.newBuilder()
+				.acceptUnknownOptions(false)
+				.programName(Main.class.getName())
+				.addObject(commandLineOptions)
+				.build();
+
 			jCommander.parse(argv);
-			main(args, jCommander);
+			if (commandLineOptions.isHelp()) {
+				jCommander.usage();
+			}
+			else {
+				main(commandLineOptions);
+			}
 		}
 		catch (ParameterException e) {
 			e.printStackTrace();
@@ -82,13 +93,8 @@ public class Main {
 		}
 	}
 
-	protected static void main(Args args, JCommander jCommander) throws Exception {
-		if (args.help) {
-			jCommander.usage();
-		}
-		else {
-			Main application = new Main(args);
-			application.executeSuite();
-		}
+	protected static void main(Options options) throws ExecutionException, InterruptedException {
+		Main application = new Main(options);
+		application.executeSuite();
 	}
 }

@@ -27,13 +27,31 @@ import org.testng.annotations.Test;
 import com.beust.jcommander.JCommander;
 import com.google.common.collect.Multimap;
 
-import guru.qas.martini.standalone.jcommander.Args;
+import guru.qas.martini.standalone.harness.GatedMartiniComparator;
+import guru.qas.martini.standalone.harness.Options;
+import guru.qas.martini.standalone.jcommander.CommandLineOptions;
 import guru.qas.martini.standalone.test.TestListener;
 
-import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 public class MainTest {
+
+	@Test
+	public void testSpelFilter() {
+		String[] argv = new String[]{"-spelFilter", "isWIP()", "&&", "!isProvisional()"};
+		CommandLineOptions args = new CommandLineOptions();
+		JCommander.newBuilder().addObject(args).build().parse(argv);
+		Main application = new Main(args);
+
+		ConfigurableApplicationContext context = application.getApplicationContext();
+		Options options = context.getBean(Options.class);
+		String spelFilter = options.getSpelFilter()
+			.orElseThrow(() -> new IllegalStateException("no spelFilter recognized"));
+
+		String joined = "isWIP() && !isProvisional()";
+		checkArgument(joined.equals(spelFilter), "wrong spelFilter; expected %s but found %s", joined, spelFilter);
+	}
 
 	@Test
 	public void testMultiThreaded() throws Exception {
@@ -48,8 +66,9 @@ public class MainTest {
 	protected Multimap<String, String> executeWithParallelism(int parallelism) throws ExecutionException, InterruptedException {
 		String[] argv = new String[]{
 			"-parallelism", String.valueOf(parallelism),
+			"-martiniComparatorImplementation", GatedMartiniComparator.class.getName(),
 			"-configLocations", "classpath*:**/applicationContext.xml,classpath*:/bogus.xml"};
-		Args args = new Args();
+		CommandLineOptions args = new CommandLineOptions();
 		JCommander.newBuilder().addObject(args).build().parse(argv);
 		Main application = new Main(args);
 

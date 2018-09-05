@@ -16,14 +16,13 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness.configuration;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.event.DefaultSuiteIdentifier;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.standalone.harness.Options;
 
 @Configuration
 @Lazy
@@ -32,9 +31,9 @@ class SuiteIdentifierConfiguration {
 	@Bean
 	SuiteIdentifier getSuiteIdentifier(
 		AutowireCapableBeanFactory beanFactory,
-		@Value("${martini.suite.identifier.impl:#{null}}") Class<? extends SuiteIdentifier> implementation
+		Options options
 	) {
-		return null == implementation ?
-			beanFactory.createBean(DefaultSuiteIdentifier.class) : beanFactory.createBean(implementation);
+		Class<? extends SuiteIdentifier> implementation = options.getSuiteIdentifierImplementation();
+		return beanFactory.createBean(implementation);
 	}
 }
