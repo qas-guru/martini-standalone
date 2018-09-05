@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.MessageSource;
@@ -65,6 +66,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 	protected final TaskFactory taskFactory;
 	protected final EventManager eventManager;
 	protected final ForkJoinPool forkJoinPool;
+	protected final long pollInterval;
 	protected final Logger logger;
 
 	protected ApplicationContext applicationContext;
@@ -77,7 +79,8 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> comparator,
 		TaskFactory taskFactory,
 		EventManager eventManager,
-		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool
+		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool,
+		@Value("${martini.fork.join.pool.poll.interval:250}") long pollInterval
 	) {
 		this.args = args;
 		this.mixologist = mixologist;
@@ -86,6 +89,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		this.taskFactory = taskFactory;
 		this.eventManager = eventManager;
 		this.forkJoinPool = forkJoinPool;
+		this.pollInterval = pollInterval;
 		this.logger = LoggerFactory.getLogger(this.getClass());
 	}
 
@@ -144,26 +148,31 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 
 	protected Runnable getRunnable(Collection<Martini> martiniCollection) {
 		ConcurrentLinkedDeque<Martini> martinis = new ConcurrentLinkedDeque<>(martiniCollection);
+		Monitor monitor = new Monitor();
 
 		return () -> {
-			try {
-				Monitor monitor = new Monitor();
-				while (!martinis.isEmpty()) {
-
-					if (forkJoinPool.hasQueuedSubmissions()) {
-						Thread.sleep(250);
-					}
-					else {
-						Runnable task = taskFactory.getTask(monitor, martinis);
-						forkJoinPool.submit(task);
-					}
+			while (!martinis.isEmpty()) {
+				if (forkJoinPool.hasQueuedSubmissions()) {
+					sleep();
 				}
-				forkJoinPool.awaitQuiescence(args.timeoutInMinutes, TimeUnit.MINUTES);
+				else {
+					Runnable task = taskFactory.getTask(monitor, martinis);
+					forkJoinPool.submit(task);
+				}
+			}
+			forkJoinPool.awaitQuiescence(args.timeoutInMinutes, TimeUnit.MINUTES);
+		};
+	}
+
+	protected void sleep() {
+		if (pollInterval > 0) {
+			try {
+				Thread.sleep(pollInterval);
 			}
 			catch (InterruptedException e) {
-				throw getMartiniException(e);
+				throw new RuntimeException(e);
 			}
-		};
+		}
 	}
 
 	protected MartiniException getMartiniException(InterruptedException cause) {

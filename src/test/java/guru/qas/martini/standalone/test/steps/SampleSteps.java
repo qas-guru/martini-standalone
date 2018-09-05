@@ -27,6 +27,7 @@ import guru.qas.martini.annotation.Given;
 import guru.qas.martini.annotation.Steps;
 import guru.qas.martini.annotation.Then;
 import guru.qas.martini.annotation.When;
+import guru.qas.martini.standalone.jcommander.Args;
 
 @Steps
 public class SampleSteps {
@@ -34,8 +35,10 @@ public class SampleSteps {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SampleSteps.class);
 
 	private final SecureRandom random;
+	private final Args args;
 
-	SampleSteps() {
+	SampleSteps(Args args) {
+		this.args = args;
 		random = new SecureRandom();
 	}
 
@@ -62,7 +65,7 @@ public class SampleSteps {
 	}
 
 	private void sleep() {
-		int millis = random.nextInt(3000);
+		int millis = 1 == args.parallelism ? 0 : random.nextInt(3000);
 		try {
 			Thread.sleep(millis);
 		}

@@ -48,7 +48,6 @@ public class Args {
 
 	@Parameter(
 		names = "-spelFilter",
-		variableArity = true,
 		description = "Spring SPel expression indicating which scenarios should be executed")
 	public String spelFilter;
 

@@ -46,6 +46,8 @@ import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.runtime.harness.MartiniCallable;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 @SuppressWarnings("WeakerAccess")
 @Configurable
 public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware {
@@ -57,7 +59,10 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 	protected ApplicationContext applicationContext;
 
 	@Autowired
-	DefaultTaskFactory(EventManager eventManager, SuiteIdentifier suiteIdentifier) {
+	DefaultTaskFactory(
+		EventManager eventManager,
+		SuiteIdentifier suiteIdentifier
+	) {
 		this.eventManager = eventManager;
 		this.suiteIdentifier = suiteIdentifier;
 		logger = LoggerFactory.getLogger(this.getClass());
@@ -70,6 +75,8 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 
 	@Override
 	public Runnable getTask(Monitor monitor, Deque<Martini> martinis) {
+		checkNotNull(monitor, "null Monitor");
+		checkNotNull(martinis, "null Deque");
 
 		return () -> {
 			Martini martini;

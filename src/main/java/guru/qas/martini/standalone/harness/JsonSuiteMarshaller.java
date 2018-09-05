@@ -29,6 +29,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
@@ -58,6 +59,7 @@ import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings("WeakerAccess")
 @Component
+@Lazy
 @Conditional(value = JsonSuiteMarshallerRequestedCondition.class)
 public class JsonSuiteMarshaller implements InitializingBean, DisposableBean {
 
