@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 import com.beust.jcommander.JCommander;
 import com.google.common.collect.Multimap;
 
-import guru.qas.martini.standalone.harness.GatedMartiniComparator;
+import guru.qas.martini.spring.standalone.GatedMartiniComparator;
 import guru.qas.martini.standalone.harness.Options;
 import guru.qas.martini.standalone.jcommander.CommandLineOptions;
 import guru.qas.martini.standalone.test.spring.TestListener;
@@ -104,7 +104,7 @@ public class MainTest {
 	protected Multimap<String, String> executeWithParallelism(int parallelism) throws ExecutionException, InterruptedException {
 		String[] argv = new String[]{
 			"-parallelism", String.valueOf(parallelism),
-			"-martiniComparatorImplementation", GatedMartiniComparator.class.getName(),
+			"-gatedMartiniComparatorImplementation", GatedMartiniComparator.class.getName(),
 			"-configLocations", "classpath*:**/applicationContext.xml,classpath*:/bogus.xml"};
 		Main application = getApplication(argv);
 

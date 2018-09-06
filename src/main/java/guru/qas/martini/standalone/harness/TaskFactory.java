@@ -16,13 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.standalone.harness;
 
-import java.util.Deque;
-
-import com.google.common.util.concurrent.Monitor;
+import java.util.Iterator;
+import java.util.Optional;
 
 import guru.qas.martini.Martini;
 
 public interface TaskFactory {
 
-	Runnable getTask(Monitor monitor, Deque<Martini> martinis);
+	Runnable getTask(Iterator<Optional<Martini>> i);
 }

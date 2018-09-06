@@ -53,12 +53,12 @@ public class GateIndex {
 		return new Builder();
 	}
 
-	protected static class Builder {
+	public static class Builder {
 
 		protected Builder() {
 		}
 
-		protected GateIndex build(@Nullable Martini martini) {
+		public GateIndex build(@Nullable Martini martini) {
 			Collection<MartiniGate> gates = null == martini ? Collections.emptySet() : martini.getGates();
 			LinkedHashMultimap<String, Integer> index = getIndex(gates);
 			return new GateIndex(gates, index);

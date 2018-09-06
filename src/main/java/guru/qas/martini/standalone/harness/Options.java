@@ -47,7 +47,7 @@ public interface Options {
 	boolean isJsonOutputFileOverwrite();
 
 	@Nonnull
-	Class<? extends Comparator<Martini>> getComparatorImplementation();
+	Class<? extends Comparator<Martini>> getGatedMartiniComparatorImplementation();
 
 	@Nonnull
 	Class<? extends MartiniStandaloneEngine> getEngineImplementation();
@@ -60,4 +60,6 @@ public interface Options {
 
 	@Nonnull
 	Class<? extends Thread.UncaughtExceptionHandler> getUncaughtExceptionHandlerImplementation();
+
+	long getMartiniGatePollTimeoutMs();
 }

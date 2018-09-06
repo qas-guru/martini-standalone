@@ -26,6 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import guru.qas.martini.Martini;
 import guru.qas.martini.standalone.harness.Options;
 
+@SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
 public class MartiniComparatorConfiguration {
@@ -35,9 +36,9 @@ public class MartiniComparatorConfiguration {
 	@Bean(name = BEAN_NAME)
 	Comparator<Martini> getMartiniComparator(
 		AutowireCapableBeanFactory beanFactory,
-		Options options
+		@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") Options options
 	) {
-		Class<? extends Comparator<Martini>> implementation = options.getComparatorImplementation();
+		Class<? extends Comparator<Martini>> implementation = options.getGatedMartiniComparatorImplementation();
 		return beanFactory.createBean(implementation);
 	}
 }

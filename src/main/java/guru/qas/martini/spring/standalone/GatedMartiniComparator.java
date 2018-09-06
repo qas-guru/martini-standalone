@@ -14,19 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness;
+package guru.qas.martini.spring.standalone;
 
 import java.util.Comparator;
 
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Ordering;
 
 import guru.qas.martini.Martini;
+import guru.qas.martini.standalone.harness.GateIndex;
 
 @SuppressWarnings("WeakerAccess")
-@Configurable
+@Component
 public class GatedMartiniComparator implements Comparator<Martini>, InitializingBean {
 
 	protected Ordering<GateIndex> ordering;
@@ -55,5 +56,4 @@ public class GatedMartiniComparator implements Comparator<Martini>, Initializing
 		GateIndex rightIndex = null == right ? null : GateIndex.builder().build(right);
 		return ordering.compare(leftIndex, rightIndex);
 	}
-
 }

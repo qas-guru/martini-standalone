@@ -19,9 +19,9 @@ package guru.qas.martini.standalone.harness;
 import java.util.Collection;
 
 import java.util.Comparator;
-
+import java.util.Iterator;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 
@@ -33,12 +33,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.MessageSource;
 
-import com.google.common.collect.Ordering;
-import com.google.common.util.concurrent.Monitor;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 
 import guru.qas.martini.Martini;
@@ -61,7 +60,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 	protected final Options options;
 	protected final Mixologist mixologist;
 	protected final SuiteIdentifier suiteIdentifier;
-	protected final Comparator<Martini> comparator;
+	protected final Comparator<Martini> gatedComparator;
 	protected final TaskFactory taskFactory;
 	protected final EventManager eventManager;
 	protected final ForkJoinPool forkJoinPool;
@@ -74,7 +73,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		Options options,
 		Mixologist mixologist,
 		SuiteIdentifier suiteIdentifier,
-		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> comparator,
+		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> gatedComparator,
 		TaskFactory taskFactory,
 		EventManager eventManager,
 		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool
@@ -82,7 +81,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		this.options = options;
 		this.mixologist = mixologist;
 		this.suiteIdentifier = suiteIdentifier;
-		this.comparator = comparator;
+		this.gatedComparator = gatedComparator;
 		this.taskFactory = taskFactory;
 		this.eventManager = eventManager;
 		this.forkJoinPool = forkJoinPool;
@@ -131,6 +130,13 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		String filter = options.getSpelFilter().orElse(null);
 		Collection<Martini> martinis = null == filter ? mixologist.getMartinis() : mixologist.getMartinis(filter);
 
+		assertMartinisFound(filter, martinis);
+		assertImplementation(martinis);
+
+		return martinis;
+	}
+
+	protected void assertMartinisFound(String filter, Collection<Martini> martinis) {
 		if (martinis.isEmpty()) {
 			MessageSource source = MessageSources.getMessageSource(this.getClass());
 			MartiniException.Builder builder = new MartiniException.Builder().setMessageSource(source);
@@ -138,7 +144,9 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 				builder.setKey("no.martinis.found").build() :
 				builder.setKey("no.martinis.found.for.filter").setArguments(filter).build();
 		}
+	}
 
+	protected void assertImplementation(Collection<Martini> martinis) {
 		if (options.isUnimplementedStepsFatal()) {
 			Martini unimplemented = martinis.stream()
 				.filter(this::isUnimplemented)
@@ -153,8 +161,6 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 					.build();
 			}
 		}
-
-		return Ordering.from(comparator).sortedCopy(martinis);
 	}
 
 	protected boolean isUnimplemented(Martini martini) {
@@ -163,17 +169,17 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 			.anyMatch(Objects::isNull);
 	}
 
-	protected Runnable getRunnable(Collection<Martini> martiniCollection) {
-		ConcurrentLinkedDeque<Martini> martinis = new ConcurrentLinkedDeque<>(martiniCollection);
-		Monitor monitor = new Monitor();
+	protected Runnable getRunnable(Collection<Martini> martinis) {
+
+		Iterator<Optional<Martini>> i = getMartiniIterator(martinis);
 
 		return () -> {
-			while (!martinis.isEmpty()) {
+			while (i.hasNext()) {
 				if (forkJoinPool.hasQueuedSubmissions()) {
 					sleep();
 				}
 				else {
-					Runnable task = taskFactory.getTask(monitor, martinis);
+					Runnable task = taskFactory.getTask(i);
 					forkJoinPool.submit(task);
 				}
 			}
@@ -182,6 +188,19 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 				sleep();
 			}
 		};
+	}
+
+	protected Iterator<Optional<Martini>> getMartiniIterator(Collection<Martini> martinis) {
+		long timeout = options.getMartiniGatePollTimeoutMs();
+		Iterator<Optional<Martini>> i = MartiniIterator.builder()
+			.setPollTimeoutMs(timeout)
+			.setGated(gatedComparator)
+			.setMartinis(martinis)
+			.build();
+
+		AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
+		beanFactory.autowireBean(i);
+		return i;
 	}
 
 	protected void sleep() {

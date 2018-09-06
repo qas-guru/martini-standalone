@@ -32,10 +32,10 @@ import com.google.common.collect.Lists;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.DefaultSuiteIdentifier;
 import guru.qas.martini.event.SuiteIdentifier;
+import guru.qas.martini.spring.standalone.GatedMartiniComparator;
 import guru.qas.martini.standalone.harness.DefaultMartiniStandaloneEngine;
 import guru.qas.martini.standalone.harness.DefaultTaskFactory;
 import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
-import guru.qas.martini.standalone.harness.GatedMartiniComparator;
 import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
 import guru.qas.martini.standalone.harness.Options;
 import guru.qas.martini.standalone.harness.TaskFactory;
@@ -106,12 +106,19 @@ public class CommandLineOptions implements Options {
 	protected long jobPoolPollIntervalMs = (long) 250;
 
 	@Parameter(
-		names = "-martiniComparatorImplementation",
+		names = "-martiniGateMonitorPollTimeoutMs",
+		description = "number of milliseconds to wait for the gate monitor",
+		validateValueWith = GreaterThanZeroValidator.class
+	)
+	protected long martiniGateMonitorPollTimeout = (long) 500;
+
+	@Parameter(
+		names = "-gatedMartiniComparatorImplementation",
 		arity = 1,
 		converter = ClassConverter.class,
-		description = "Martini comparator implementation"
+		description = "gated Martini comparator implementation"
 	)
-	Class<? extends Comparator<Martini>> comparatorImplementation = GatedMartiniComparator.class;
+	Class<? extends Comparator<Martini>> gatedComparatorImplementation = GatedMartiniComparator.class;
 
 	@Parameter(
 		names = "-engineImplementation",
@@ -205,8 +212,8 @@ public class CommandLineOptions implements Options {
 
 	@Nonnull
 	@Override
-	public Class<? extends Comparator<Martini>> getComparatorImplementation() {
-		return comparatorImplementation;
+	public Class<? extends Comparator<Martini>> getGatedMartiniComparatorImplementation() {
+		return gatedComparatorImplementation;
 	}
 
 	@Nonnull
@@ -231,5 +238,10 @@ public class CommandLineOptions implements Options {
 	@Override
 	public Class<? extends Thread.UncaughtExceptionHandler> getUncaughtExceptionHandlerImplementation() {
 		return uncaughtExceptionHandlerImplementation;
+	}
+
+	@Override
+	public long getMartiniGatePollTimeoutMs() {
+		return martiniGateMonitorPollTimeout;
 	}
 }

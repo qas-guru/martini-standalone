@@ -18,11 +18,10 @@ package guru.qas.martini.standalone.harness;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
-import java.util.HashSet;
+
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Set;
+
 import java.util.concurrent.Callable;
 
 import javax.annotation.Nonnull;
@@ -37,7 +36,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.SuiteIdentifier;
@@ -74,63 +72,14 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 	}
 
 	@Override
-	public Runnable getTask(Monitor monitor, Deque<Martini> martinis) {
-		checkNotNull(monitor, "null Monitor");
-		checkNotNull(martinis, "null Deque");
-
+	public Runnable getTask(Iterator<Optional<Martini>> i) {
+		checkNotNull(i, "null Iterator");
 		return () -> {
-			Martini martini;
-
-			monitor.enter();
-			try {
-				Iterator<Martini> iterator = martinis.iterator();
-				martini = getNext(iterator).orElse(null);
-			}
-			finally {
-				monitor.leave();
-			}
-
-			if (null != martini) {
-				execute(martini);
+			Martini next = i.hasNext() ? i.next().orElse(null) : null;
+			if (null != next) {
+				execute(next);
 			}
 		};
-	}
-
-	protected Optional<Martini> getNext(Iterator<Martini> i) {
-		Martini martini = null;
-
-		while (null == martini && i.hasNext()) {
-			Martini candidate = i.next();
-
-			if (lock(candidate)) {
-				i.remove();
-				martini = candidate;
-			}
-			else {
-				releasePermits(candidate);
-			}
-		}
-
-		return Optional.ofNullable(martini);
-	}
-
-	protected boolean lock(Martini martini) {
-		Set<String> gateNames = new HashSet<>();
-		return martini.getGates().stream()
-			.filter(gate -> {
-				String name = gate.getName();
-				return gateNames.add(name);
-			})
-			.map(MartiniGate::enter)
-			.filter(permitted -> !permitted)
-			.findFirst()
-			.orElse(true);
-	}
-
-	protected void releasePermits(Martini martini) {
-		Collection<MartiniGate> gates = martini.getGates();
-		ArrayList<MartiniGate> gateList = Lists.newArrayList(gates);
-		Lists.reverse(gateList).forEach(MartiniGate::leave);
 	}
 
 	protected void execute(Martini martini) {
@@ -146,5 +95,11 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 		finally {
 			releasePermits(martini);
 		}
+	}
+
+	protected void releasePermits(Martini martini) {
+		Collection<MartiniGate> gates = martini.getGates();
+		ArrayList<MartiniGate> gateList = Lists.newArrayList(gates);
+		Lists.reverse(gateList).forEach(MartiniGate::leave);
 	}
 }
