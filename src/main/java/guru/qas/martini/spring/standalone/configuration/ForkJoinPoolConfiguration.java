@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness.configuration;
+package guru.qas.martini.spring.standalone.configuration;
 
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;

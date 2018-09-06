@@ -48,8 +48,8 @@ import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.i18n.MessageSources;
 
 import guru.qas.martini.runtime.event.EventManager;
-import guru.qas.martini.standalone.harness.configuration.ForkJoinPoolConfiguration;
-import guru.qas.martini.standalone.harness.configuration.MartiniComparatorConfiguration;
+import guru.qas.martini.spring.standalone.configuration.ForkJoinPoolConfiguration;
+import guru.qas.martini.spring.standalone.configuration.MartiniComparatorConfiguration;
 import guru.qas.martini.step.StepImplementation;
 
 import static java.util.concurrent.TimeUnit.MINUTES;

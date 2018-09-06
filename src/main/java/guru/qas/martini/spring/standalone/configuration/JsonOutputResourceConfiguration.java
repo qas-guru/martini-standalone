@@ -14,26 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness.configuration;
+package guru.qas.martini.spring.standalone.configuration;
 
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import java.io.File;
+import java.nio.file.OpenOption;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.io.WritableResource;
 
-import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.standalone.harness.Options;
+import guru.qas.martini.standalone.io.OptionedFileSystemResource;
+
+import static java.nio.file.StandardOpenOption.*;
 
 @Configuration
 @Lazy
-class SuiteIdentifierConfiguration {
+public class JsonOutputResourceConfiguration {
 
-	@Bean
-	SuiteIdentifier getSuiteIdentifier(
-		AutowireCapableBeanFactory beanFactory,
-		Options options
-	) {
-		Class<? extends SuiteIdentifier> implementation = options.getSuiteIdentifierImplementation();
-		return beanFactory.createBean(implementation);
+	public static final String BEAN_NAME = "jsonOutputResource";
+
+	@Bean(name = BEAN_NAME)
+	WritableResource getJsonOutputResource(Options options) {
+		File file = options.getJsonOutputFile().orElseThrow(() -> new IllegalStateException("null File"));
+		OpenOption[] openOptions = new OpenOption[]{
+			options.isJsonOutputFileOverwrite() ? CREATE : CREATE_NEW, TRUNCATE_EXISTING};
+		return new OptionedFileSystemResource(file, openOptions);
 	}
 }

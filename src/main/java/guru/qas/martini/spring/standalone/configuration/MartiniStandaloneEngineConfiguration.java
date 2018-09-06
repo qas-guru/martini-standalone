@@ -14,29 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness.configuration;
+package guru.qas.martini.spring.standalone.configuration;
 
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
+import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
 import guru.qas.martini.standalone.harness.Options;
 
 @SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-public class UncaughtExceptionHandlerConfiguration {
+class MartiniStandaloneEngineConfiguration {
 
-	public static final String BEAN_NAME = "martiniUncaughtExceptionHandler";
-
-	@Bean(name = BEAN_NAME)
-	Thread.UncaughtExceptionHandler getUncaughtExceptionHandler(
+	@Bean
+	protected MartiniStandaloneEngine getEngine(
 		AutowireCapableBeanFactory beanFactory,
 		Options options
 	) {
-		Class<? extends Thread.UncaughtExceptionHandler> implementation =
-			options.getUncaughtExceptionHandlerImplementation();
+		Class<? extends MartiniStandaloneEngine> implementation = options.getEngineImplementation();
 		return beanFactory.createBean(implementation);
 	}
 }

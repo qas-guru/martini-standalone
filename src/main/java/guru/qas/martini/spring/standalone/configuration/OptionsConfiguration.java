@@ -1,5 +1,5 @@
 /*
-Copyright 2017-2018 Penny Rohr Curich
+Copyright 2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,27 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness.configuration;
+package guru.qas.martini.spring.standalone.configuration;
 
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.core.env.Environment;
 
-import guru.qas.martini.standalone.harness.MartiniStandaloneEngine;
 import guru.qas.martini.standalone.harness.Options;
+import guru.qas.martini.standalone.jcommander.OptionsPropertySource;
 
-@SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-class MartiniStandaloneEngineConfiguration {
+class OptionsConfiguration {
 
 	@Bean
-	protected MartiniStandaloneEngine getEngine(
-		AutowireCapableBeanFactory beanFactory,
-		Options options
-	) {
-		Class<? extends MartiniStandaloneEngine> implementation = options.getEngineImplementation();
-		return beanFactory.createBean(implementation);
+	Options getOptions(Environment environment) {
+		return environment.getProperty(OptionsPropertySource.PROPERTY, Options.class);
 	}
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Penny Rohr Curich
+Copyright 2017-2018 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,30 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness.configuration;
-
-import java.util.Comparator;
+package guru.qas.martini.spring.standalone.configuration;
 
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
-import guru.qas.martini.Martini;
 import guru.qas.martini.standalone.harness.Options;
 
+@SuppressWarnings("WeakerAccess")
 @Configuration
 @Lazy
-public class MartiniComparatorConfiguration {
+public class UncaughtExceptionHandlerConfiguration {
 
-	public static final String BEAN_NAME = "martiniComparator";
+	public static final String BEAN_NAME = "martiniUncaughtExceptionHandler";
 
 	@Bean(name = BEAN_NAME)
-	Comparator<Martini> getMartiniComparator(
+	Thread.UncaughtExceptionHandler getUncaughtExceptionHandler(
 		AutowireCapableBeanFactory beanFactory,
 		Options options
 	) {
-		Class<? extends Comparator<Martini>> implementation = options.getComparatorImplementation();
+		Class<? extends Thread.UncaughtExceptionHandler> implementation =
+			options.getUncaughtExceptionHandlerImplementation();
 		return beanFactory.createBean(implementation);
 	}
 }

@@ -34,7 +34,7 @@ import com.google.common.collect.Multimap;
 import guru.qas.martini.standalone.harness.GatedMartiniComparator;
 import guru.qas.martini.standalone.harness.Options;
 import guru.qas.martini.standalone.jcommander.CommandLineOptions;
-import guru.qas.martini.standalone.test.TestListener;
+import guru.qas.martini.standalone.test.spring.TestListener;
 
 import static com.google.common.base.Preconditions.*;
 

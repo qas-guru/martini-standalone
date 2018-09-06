@@ -14,22 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness.configuration;
+package guru.qas.martini.spring.standalone.configuration;
 
+import java.util.Comparator;
+
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.env.Environment;
 
+import guru.qas.martini.Martini;
 import guru.qas.martini.standalone.harness.Options;
-import guru.qas.martini.standalone.jcommander.OptionsPropertySource;
 
 @Configuration
 @Lazy
-class OptionsConfiguration {
+public class MartiniComparatorConfiguration {
 
-	@Bean
-	Options getOptions(Environment environment) {
-		return environment.getProperty(OptionsPropertySource.PROPERTY, Options.class);
+	public static final String BEAN_NAME = "martiniComparator";
+
+	@Bean(name = BEAN_NAME)
+	Comparator<Martini> getMartiniComparator(
+		AutowireCapableBeanFactory beanFactory,
+		Options options
+	) {
+		Class<? extends Comparator<Martini>> implementation = options.getComparatorImplementation();
+		return beanFactory.createBean(implementation);
 	}
 }

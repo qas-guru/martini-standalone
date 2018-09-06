@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package guru.qas.martini.standalone.harness;
+package guru.qas.martini.spring.standalone;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -54,7 +54,8 @@ import guru.qas.martini.runtime.event.json.MartiniResultSerializer;
 import guru.qas.martini.runtime.event.json.StepImplementationSerializer;
 import guru.qas.martini.runtime.event.json.StepResultSerializer;
 import guru.qas.martini.runtime.event.json.SuiteIdentifierSerializer;
-import guru.qas.martini.standalone.harness.configuration.JsonOutputResourceConfiguration;
+import guru.qas.martini.spring.standalone.configuration.JsonOutputResourceConfiguration;
+import guru.qas.martini.standalone.harness.JsonSuiteMarshallerRequestedCondition;
 import guru.qas.martini.step.StepImplementation;
 
 @SuppressWarnings("WeakerAccess")
