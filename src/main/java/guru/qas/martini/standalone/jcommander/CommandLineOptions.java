@@ -82,7 +82,7 @@ public class CommandLineOptions implements Options {
 		names = "-unimplementedStepsFatal",
 		description = "true to prevent execution when unimplemented steps are detected"
 	)
-	protected boolean unimplementedStepsFatal = true;
+	protected boolean unimplementedStepsFatal = false;
 
 	@Parameter(
 		names = "-awaitTerminationS",
