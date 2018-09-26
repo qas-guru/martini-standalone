@@ -5,7 +5,6 @@
 1. [How does Martini Standalone work?](#how)
 	1. [How do I run my suite using Martini Standalone?](#how-execute)
 1. [Where can I find more information?](#info)
-	1. [Wiki](#wiki)
 
 ### What is Martini Standalone? <a name="what"></a>
 
@@ -27,5 +26,5 @@ The Main entry-point class has a help switch detailing available options
 
 ### Where can I find more information? <a name="info"></a>
 
-#### In Progress: [Martini Standalone Wiki](https://github.com/qas-guru/martini-standalone/wiki) <a name="wiki"></a>
-#### In Progress: [__Martini - swank software testing in Java__](https://leanpub.com/martini) <a name="book"></a>
+#### In Progress: [Martini Standalone Wiki](https://github.com/qas-guru/martini-standalone/wiki) 
+#### In Progress: [__Martini - swank software testing in Java__](https://leanpub.com/martini) 
