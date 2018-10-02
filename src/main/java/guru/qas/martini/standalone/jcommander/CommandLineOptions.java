@@ -42,78 +42,93 @@ import guru.qas.martini.standalone.harness.TaskFactory;
 
 import static com.google.common.base.Preconditions.*;
 
-@SuppressWarnings({"ConstantConditions", "FieldCanBeLocal"})
+@SuppressWarnings({"ConstantConditions", "FieldCanBeLocal", "WeakerAccess"})
 public class CommandLineOptions implements Options {
+	public static final String PARAMETER_CONFIG_LOCATIONS = "-configLocations";
+	public static final String PARAMETER_JSON_OVERWRITE = "-jsonOverwrite";
+	public static final String PARAMETER_JSON_OUTPUT_FILE = "-jsonOutputFile";
+	public static final String PARAMETER_SPEL_FILTER = "-spelFilter";
+	public static final String PARAMETER_PARALLELISM = "-parallelism";
+	public static final String PARAMETER_UNIMPLEMENTED_STEPS_FATAL = "-unimplementedStepsFatal";
+	public static final String PARAMETER_AWAIT_TERMINATION_SECONDS = "-awaitTerminationS";
+	public static final String PARAMETER_TIMEOUT_MINUTES = "-timeoutInMinutes";
+	public static final String PARAMETER_JOB_POOL_POLL_INTERVAL_MS = "-jobPoolPollIntervalMs";
+	public static final String PARAMETER_GATE_MONITOR_POLL_TIMEOUT_MS = "-gateMonitorPollTimeoutMs";
+	public static final String PARAMETER_GATED_MARTINI_COMPARATOR_IMPL = "-gatedMartiniComparatorImplementation";
+	public static final String PARAMETER_ENGINE_IMPL = "-engineImplementation";
+	public static final String PARAMETER_SUITE_IDENTIFIER_IMPL = "-suiteIdentifierImplementation";
+	public static final String PARAMETER_TASK_FACTORY_IMPL = "-taskFactoryImplementation";
+	public static final String PARAMETER_UNCAUGHT_EXCEPTION_HANDLER_IMPL = "-uncaughtExceptionHandlerImplementation";
 
 	@Parameter(names = {"-h", "--h", "-help", "--help"}, help = true)
 	protected boolean help;
 
 	@Parameter(
-		names = "-configLocations",
+		names = PARAMETER_CONFIG_LOCATIONS,
 		variableArity = true,
 		description = "list of Spring configuration files")
 	protected List<String> configLocations = Lists.newArrayList("classpath*:**/applicationContext.xml");
 
 	@Parameter(
-		names = "-jsonOverwrite",
+		names = PARAMETER_JSON_OVERWRITE,
 		description = "overwrites existing JSON output"
 	)
 	protected boolean jsonOverwrite = true;
 
 	@Parameter(
-		names = "-jsonOutputFile",
+		names = PARAMETER_JSON_OUTPUT_FILE,
 		description = "JSON output file location for suite reporting, e.g. /tmp/martini.json")
 	protected File jsonOutputFile;
 
 	@Parameter(
-		names = "-spelFilter",
+		names = PARAMETER_SPEL_FILTER,
 		variableArity = true,
 		description = "Spring SPel expression indicating which scenarios should be executed")
 	protected List<String> spelFilter;
 
 	@Parameter(
-		names = "-parallelism",
+		names = PARAMETER_PARALLELISM,
 		description = "Fork Join Pool parallelism (defaulted to available processors); must be greater than zero",
 		validateValueWith = GreaterThanZeroValidator.class
 	)
 	protected int parallelism = Runtime.getRuntime().availableProcessors();
 
 	@Parameter(
-		names = "-unimplementedStepsFatal",
+		names = PARAMETER_UNIMPLEMENTED_STEPS_FATAL,
 		description = "true to prevent execution when unimplemented steps are detected"
 	)
 	protected boolean unimplementedStepsFatal = false;
 
 	@Parameter(
-		names = "-awaitTerminationS",
+		names = PARAMETER_AWAIT_TERMINATION_SECONDS,
 		description = "number of seconds Fork Join Pool will wait before forcing termination; must be greater than zero",
 		validateValueWith = GreaterThanZeroValidator.class
 	)
 	protected Long awaitTerminationSeconds = (long) 5 * 60;
 
 	@Parameter(
-		names = "-timeoutInMinutes",
+		names = PARAMETER_TIMEOUT_MINUTES,
 		description = "period of time after which suite should exit; must be greater than zero",
 		validateValueWith = GreaterThanZeroValidator.class
 	)
 	protected Long timeoutInMinutes = (long) (60 * 12);
 
 	@Parameter(
-		names = "-jobPoolPollIntervalMs",
+		names = PARAMETER_JOB_POOL_POLL_INTERVAL_MS,
 		description = "number of milliseconds between queued job check of Fork Join Pool",
 		validateValueWith = GreaterThanZeroValidator.class
 	)
 	protected long jobPoolPollIntervalMs = (long) 250;
 
 	@Parameter(
-		names = "-martiniGateMonitorPollTimeoutMs",
+		names = PARAMETER_GATE_MONITOR_POLL_TIMEOUT_MS,
 		description = "number of milliseconds to wait for the gate monitor",
 		validateValueWith = GreaterThanZeroValidator.class
 	)
 	protected long martiniGateMonitorPollTimeout = (long) 500;
 
 	@Parameter(
-		names = "-gatedMartiniComparatorImplementation",
+		names = PARAMETER_GATED_MARTINI_COMPARATOR_IMPL,
 		arity = 1,
 		converter = ClassConverter.class,
 		description = "gated Martini comparator implementation"
@@ -121,7 +136,7 @@ public class CommandLineOptions implements Options {
 	Class<? extends Comparator<Martini>> gatedComparatorImplementation = GatedMartiniComparator.class;
 
 	@Parameter(
-		names = "-engineImplementation",
+		names = PARAMETER_ENGINE_IMPL,
 		arity = 1,
 		converter = ClassConverter.class,
 		description = "MartiniStandaloneEngine implementation"
@@ -129,7 +144,7 @@ public class CommandLineOptions implements Options {
 	Class<? extends MartiniStandaloneEngine> engineImplementation = DefaultMartiniStandaloneEngine.class;
 
 	@Parameter(
-		names = "-suiteIdentifierImplementation",
+		names = PARAMETER_SUITE_IDENTIFIER_IMPL,
 		arity = 1,
 		converter = ClassConverter.class,
 		description = "SuiteIdentifier implementation"
@@ -137,7 +152,7 @@ public class CommandLineOptions implements Options {
 	Class<? extends SuiteIdentifier> suiteIdentifierImplementation = DefaultSuiteIdentifier.class;
 
 	@Parameter(
-		names = "-taskFactoryImplementation",
+		names = PARAMETER_TASK_FACTORY_IMPL,
 		arity = 1,
 		converter = ClassConverter.class,
 		description = "TaskFactory implementation"
@@ -145,7 +160,7 @@ public class CommandLineOptions implements Options {
 	Class<? extends TaskFactory> taskFactoryImplementation = DefaultTaskFactory.class;
 
 	@Parameter(
-		names = "-uncaughtExceptionHandlerImplementation",
+		names = PARAMETER_UNCAUGHT_EXCEPTION_HANDLER_IMPL,
 		arity = 1,
 		converter = ClassConverter.class,
 		description = "Thread.UncaughtExceptionHandler implementation"
