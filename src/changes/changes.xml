@@ -13,6 +13,7 @@
 		<release version="4.0.1-JDK10" date="2018-09-04" description="Release 4.0.1 for Java 10">
 			<action dev="pcurich" type="update">
 				Adding accessible command line parameter names as constants in CommandLineOptions.
+				Removing transitively duplicate POM dependencies.
 			</action>
 		</release>
 		<release version="4.0.0-JDK10" date="2018-09-04" description="Release 4.0.0 for Java 10">
