@@ -10,8 +10,9 @@
 	</properties>
 
 	<body>
-		<release version="4.0.2" date="2018-10-30" description="Release 4.0.2">
+		<release version="4.1.0" date="2018-11-29" description="Release 4.1.0">
 			<action dev="pcurich" type="update">
+				Updating to Java 11.
 				Adding accessible command line parameter names as constants in CommandLineOptions.
 				Removing transitively duplicate POM dependencies.
 			</action>

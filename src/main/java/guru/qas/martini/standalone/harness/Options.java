@@ -47,7 +47,7 @@ public interface Options {
 	boolean isJsonOutputFileOverwrite();
 
 	@Nonnull
-	Class<? extends Comparator<Martini>> getGatedMartiniComparatorImplementation();
+	Class<? extends Comparator<Martini>> getMartiniComparatorImplementation();
 
 	@Nonnull
 	Class<? extends MartiniStandaloneEngine> getEngineImplementation();

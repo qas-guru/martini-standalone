@@ -38,7 +38,7 @@ public class MartiniComparatorConfiguration {
 		AutowireCapableBeanFactory beanFactory,
 		@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection") Options options
 	) {
-		Class<? extends Comparator<Martini>> implementation = options.getGatedMartiniComparatorImplementation();
+		Class<? extends Comparator<Martini>> implementation = options.getMartiniComparatorImplementation();
 		return beanFactory.createBean(implementation);
 	}
 }

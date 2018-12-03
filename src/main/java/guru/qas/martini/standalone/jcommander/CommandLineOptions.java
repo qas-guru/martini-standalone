@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
 import guru.qas.martini.Martini;
 import guru.qas.martini.event.DefaultSuiteIdentifier;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.spring.standalone.GatedMartiniComparator;
+import guru.qas.martini.standalone.harness.DefaultMartiniComparator;
 import guru.qas.martini.standalone.harness.DefaultMartiniStandaloneEngine;
 import guru.qas.martini.standalone.harness.DefaultTaskFactory;
 import guru.qas.martini.standalone.harness.DefaultUncaughtExceptionHandler;
@@ -54,7 +54,7 @@ public class CommandLineOptions implements Options {
 	public static final String PARAMETER_TIMEOUT_MINUTES = "-timeoutInMinutes";
 	public static final String PARAMETER_JOB_POOL_POLL_INTERVAL_MS = "-jobPoolPollIntervalMs";
 	public static final String PARAMETER_GATE_MONITOR_POLL_TIMEOUT_MS = "-gateMonitorPollTimeoutMs";
-	public static final String PARAMETER_GATED_MARTINI_COMPARATOR_IMPL = "-gatedMartiniComparatorImplementation";
+	public static final String PARAMETER_MARTINI_COMPARATOR_IMPL = "-gatedMartiniComparatorImplementation";
 	public static final String PARAMETER_ENGINE_IMPL = "-engineImplementation";
 	public static final String PARAMETER_SUITE_IDENTIFIER_IMPL = "-suiteIdentifierImplementation";
 	public static final String PARAMETER_TASK_FACTORY_IMPL = "-taskFactoryImplementation";
@@ -128,12 +128,12 @@ public class CommandLineOptions implements Options {
 	protected long martiniGateMonitorPollTimeout = (long) 500;
 
 	@Parameter(
-		names = PARAMETER_GATED_MARTINI_COMPARATOR_IMPL,
+		names = PARAMETER_MARTINI_COMPARATOR_IMPL,
 		arity = 1,
 		converter = ClassConverter.class,
-		description = "gated Martini comparator implementation"
+		description = "Martini comparator implementation"
 	)
-	Class<? extends Comparator<Martini>> gatedComparatorImplementation = GatedMartiniComparator.class;
+	Class<? extends Comparator<Martini>> martiniComparatorImplementation = DefaultMartiniComparator.class;
 
 	@Parameter(
 		names = PARAMETER_ENGINE_IMPL,
@@ -227,8 +227,8 @@ public class CommandLineOptions implements Options {
 
 	@Nonnull
 	@Override
-	public Class<? extends Comparator<Martini>> getGatedMartiniComparatorImplementation() {
-		return gatedComparatorImplementation;
+	public Class<? extends Comparator<Martini>> getMartiniComparatorImplementation() {
+		return martiniComparatorImplementation;
 	}
 
 	@Nonnull

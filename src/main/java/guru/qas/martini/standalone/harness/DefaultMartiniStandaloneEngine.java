@@ -60,7 +60,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 	protected final Options options;
 	protected final Mixologist mixologist;
 	protected final SuiteIdentifier suiteIdentifier;
-	protected final Comparator<Martini> gatedComparator;
+	protected final Comparator<Martini> martiniComparator;
 	protected final TaskFactory taskFactory;
 	protected final EventManager eventManager;
 	protected final ForkJoinPool forkJoinPool;
@@ -73,7 +73,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		Options options,
 		Mixologist mixologist,
 		SuiteIdentifier suiteIdentifier,
-		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> gatedComparator,
+		@Qualifier(MartiniComparatorConfiguration.BEAN_NAME) Comparator<Martini> martiniComparator,
 		TaskFactory taskFactory,
 		EventManager eventManager,
 		@Qualifier(ForkJoinPoolConfiguration.BEAN_NAME) ForkJoinPool forkJoinPool
@@ -81,7 +81,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		this.options = options;
 		this.mixologist = mixologist;
 		this.suiteIdentifier = suiteIdentifier;
-		this.gatedComparator = gatedComparator;
+		this.martiniComparator = martiniComparator;
 		this.taskFactory = taskFactory;
 		this.eventManager = eventManager;
 		this.forkJoinPool = forkJoinPool;
@@ -194,7 +194,7 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		long timeout = options.getMartiniGatePollTimeoutMs();
 		Iterator<Optional<Martini>> i = MartiniIterator.builder()
 			.setPollTimeoutMs(timeout)
-			.setGated(gatedComparator)
+			.setComparator(martiniComparator)
 			.setMartinis(martinis)
 			.build();
 

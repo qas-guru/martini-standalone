@@ -19,96 +19,78 @@ package guru.qas.martini.standalone.harness;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.Callable;
+
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Configurable;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.Monitor;
 
 import guru.qas.martini.Martini;
 import guru.qas.martini.gate.MartiniGate;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.*;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
 public class MartiniIterator implements Iterator<Optional<Martini>> {
 
 	protected final long pollTimeoutMs;
-	protected final ConcurrentLinkedDeque<Martini> gated;
-	protected final ConcurrentLinkedDeque<Martini> ungated;
+	protected final List<Martini> martinis;
 	protected final Monitor monitor;
 
 	protected MartiniIterator(
-		long pollTimeoutMs, ConcurrentLinkedDeque<Martini> gated,
-		ConcurrentLinkedDeque<Martini> ungated
+		long pollTimeoutMs,
+		List<Martini> martinis
 	) {
 		this.pollTimeoutMs = pollTimeoutMs;
-		this.gated = gated;
-		this.ungated = ungated;
+		this.martinis = martinis;
 		this.monitor = new Monitor();
 	}
 
 	@Override
 	public boolean hasNext() {
-		return !gated.isEmpty() || !ungated.isEmpty();
+		Optional<Boolean> evaluation = doInLock(() -> !martinis.isEmpty());
+		return evaluation.isPresent() ? evaluation.get() : true;
+	}
+
+	protected <T> Optional<T> doInLock(Callable<T> callable) {
+		try {
+			T result = null;
+			if (monitor.enterInterruptibly(pollTimeoutMs, TimeUnit.MILLISECONDS)) {
+				result = callable.call();
+			}
+			return Optional.ofNullable(result);
+		}
+		catch (InterruptedException e) {
+			throw new RuntimeException("interrupted while entering Monitor", e);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		finally {
+			monitor.leave();
+		}
 	}
 
 	@Override
 	public Optional<Martini> next() {
-		Optional<Martini> next = getNextGated();
-		return next.isPresent() ? next : getNextUngated();
-	}
-
-	protected Optional<Martini> getNextGated() {
-		Martini next;
-		try {
-			monitor.enterInterruptibly(500, TimeUnit.MILLISECONDS);
-			try {
-				next = gated.stream()
-					.filter(this::lock)
-					.findFirst()
-					.orElse(null);
-				if (null != next) {
-					gated.remove(next);
-				}
-			}
-			finally {
-				monitor.leave();
-			}
-		}
-		catch (InterruptedException e) {
-			throw new RuntimeException("interrupted while waiting on Monitor", e);
-		}
-		return Optional.ofNullable(next);
+		return doInLock(() -> {
+			Optional<Martini> optional = martinis.stream().filter(this::lock).findFirst();
+			optional.ifPresent(martinis::remove);
+			return optional.orElse(null);
+		});
 	}
 
 	protected boolean lock(Martini martini) {
-		Set<String> gateNames = new HashSet<>();
-		return martini.getGates().stream()
-			.filter(gate -> {
-				String name = gate.getName();
-				return gateNames.add(name);
-			})
-			.map(MartiniGate::enter)
-			.filter(permitted -> !permitted)
-			.findFirst()
-			.orElse(true);
-	}
-
-	protected Optional<Martini> getNextUngated() {
-		Martini martini = ungated.pollFirst();
-		return Optional.ofNullable(martini);
+		Optional<MartiniGate> optional = martini.getGates().stream().filter(gate -> !gate.enter()).findFirst();
+		optional.ifPresent(unentered -> martini.getGates().forEach(MartiniGate::leave));
+		return !optional.isPresent();
 	}
 
 	@Override
@@ -129,8 +111,7 @@ public class MartiniIterator implements Iterator<Optional<Martini>> {
 
 		protected long pollTimeoutMs;
 		protected final List<Martini> martinis;
-		protected Comparator<Martini> gatedComparator;
-		protected Comparator<Martini> ungatedComparator;
+		protected Comparator<Martini> comparator;
 
 		protected Builder() {
 			pollTimeoutMs = 500;
@@ -150,42 +131,19 @@ public class MartiniIterator implements Iterator<Optional<Martini>> {
 			return this;
 		}
 
-		public Builder setGated(Comparator<Martini> ordering) {
-			this.gatedComparator = ordering;
-			return this;
-		}
-
-		@SuppressWarnings("unused")
-		public Builder setUngated(Comparator<Martini> ordering) {
-			this.ungatedComparator = ordering;
+		@SuppressWarnings("UnusedReturnValue")
+		public Builder setComparator(Comparator<Martini> comparator) {
+			this.comparator = comparator;
 			return this;
 		}
 
 		public MartiniIterator build() {
+			checkState(null != comparator, "Comparator not set");
 			checkArgument(pollTimeoutMs > 0,
 				"illegal poll timeout %s; must be greater than zero milliseconds", pollTimeoutMs);
 
-			int martiniCount = martinis.size();
-			List<Martini> gated = Lists.newArrayListWithCapacity(martiniCount);
-			List<Martini> ungated = Lists.newArrayListWithCapacity(martiniCount);
-
-			martinis.stream()
-				.filter(Objects::nonNull)
-				.forEach(martini -> {
-					Collection<MartiniGate> gates = martini.getGates();
-					Collection<Martini> destination = gates.isEmpty() ? ungated : gated;
-					destination.add(martini);
-				});
-
-			List<Martini> sortedGated = null == gatedComparator ?
-				gated : Ordering.from(gatedComparator).sortedCopy(gated);
-
-			List<Martini> sortedUngated = null == ungatedComparator ?
-				ungated : Ordering.from(ungatedComparator).sortedCopy(ungated);
-
-			return new MartiniIterator(
-				pollTimeoutMs, new ConcurrentLinkedDeque<>(sortedGated),
-				new ConcurrentLinkedDeque<>(sortedUngated));
+			martinis.sort(comparator);
+			return new MartiniIterator(pollTimeoutMs, martinis);
 		}
 	}
 }
