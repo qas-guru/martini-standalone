@@ -38,7 +38,6 @@ import org.springframework.context.ApplicationContextAware;
 import com.google.common.collect.Lists;
 
 import guru.qas.martini.Martini;
-import guru.qas.martini.event.SuiteIdentifier;
 import guru.qas.martini.gate.MartiniGate;
 import guru.qas.martini.result.MartiniResult;
 import guru.qas.martini.runtime.event.EventManager;
@@ -51,18 +50,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware {
 
 	protected final EventManager eventManager;
-	protected final SuiteIdentifier suiteIdentifier;
 	protected final Logger logger;
 
 	protected ApplicationContext applicationContext;
 
 	@Autowired
-	DefaultTaskFactory(
-		EventManager eventManager,
-		SuiteIdentifier suiteIdentifier
-	) {
+	DefaultTaskFactory(EventManager eventManager) {
 		this.eventManager = eventManager;
-		this.suiteIdentifier = suiteIdentifier;
 		logger = LoggerFactory.getLogger(this.getClass());
 	}
 
@@ -84,9 +78,10 @@ public class DefaultTaskFactory implements TaskFactory, ApplicationContextAware 
 
 	protected void execute(Martini martini) {
 		try {
-			Callable<MartiniResult> callable = new MartiniCallable(suiteIdentifier, martini);
+			Callable<MartiniResult> callable = new MartiniCallable(martini);
 			AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
 			beanFactory.autowireBean(callable);
+			beanFactory.initializeBean(callable, callable.getClass().getName());
 			callable.call();
 		}
 		catch (Exception e) {

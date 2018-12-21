@@ -20,15 +20,18 @@ import java.util.Collection;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.cal10n.LocLogger;
+import org.slf4j.cal10n.LocLoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
 
@@ -36,26 +39,28 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.context.MessageSource;
 
+import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 
+import ch.qos.cal10n.IMessageConveyor;
 import guru.qas.martini.Martini;
 import guru.qas.martini.MartiniException;
+import guru.qas.martini.Messages;
 import guru.qas.martini.Mixologist;
 import guru.qas.martini.event.SuiteIdentifier;
-import guru.qas.martini.i18n.MessageSources;
 
 import guru.qas.martini.runtime.event.EventManager;
 import guru.qas.martini.spring.standalone.configuration.ForkJoinPoolConfiguration;
 import guru.qas.martini.spring.standalone.configuration.MartiniComparatorConfiguration;
-import guru.qas.martini.step.StepImplementation;
 
+import static guru.qas.martini.standalone.harness.DefaultMartiniStandaloneEngineMessages.*;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 @SuppressWarnings("WeakerAccess")
 @Configurable
-public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, ApplicationContextAware {
+public class DefaultMartiniStandaloneEngine
+	implements MartiniStandaloneEngine, ApplicationContextAware, InitializingBean {
 
 	protected final Options options;
 	protected final Mixologist mixologist;
@@ -64,9 +69,9 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 	protected final TaskFactory taskFactory;
 	protected final EventManager eventManager;
 	protected final ForkJoinPool forkJoinPool;
-	protected final Logger logger;
 
 	protected ApplicationContext applicationContext;
+	protected LocLogger logger;
 
 	@Autowired
 	DefaultMartiniStandaloneEngine(
@@ -85,12 +90,24 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		this.taskFactory = taskFactory;
 		this.eventManager = eventManager;
 		this.forkJoinPool = forkJoinPool;
-		this.logger = LoggerFactory.getLogger(this.getClass());
 	}
 
 	@Override
 	public void setApplicationContext(@Nonnull ApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
+	}
+
+	@SuppressWarnings("RedundantThrows")
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		setUpLogger();
+	}
+
+	protected void setUpLogger() {
+		IMessageConveyor messageConveyor = Messages.getMessageConveyor();
+		LocLoggerFactory loggerFactory = new LocLoggerFactory(messageConveyor);
+		Class<? extends DefaultMartiniStandaloneEngine> implementation = this.getClass();
+		logger = loggerFactory.getLocLogger(implementation);
 	}
 
 	@Override
@@ -119,10 +136,10 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 			limiter.runWithTimeout(runnable, timeoutInMinutes, MINUTES);
 		}
 		catch (InterruptedException e) {
-			throw getMartiniException(e);
+			throw new MartiniException(e, EXECUTION_INTERRUPTED);
 		}
 		catch (TimeoutException e) {
-			throw getMartiniException(e);
+			throw new MartiniException(e, EXECUTION_TIMED_OUT);
 		}
 	}
 
@@ -132,40 +149,30 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 
 		assertMartinisFound(filter, martinis);
 		assertImplementation(martinis);
-
 		return martinis;
 	}
 
 	protected void assertMartinisFound(String filter, Collection<Martini> martinis) {
 		if (martinis.isEmpty()) {
-			MessageSource source = MessageSources.getMessageSource(this.getClass());
-			MartiniException.Builder builder = new MartiniException.Builder().setMessageSource(source);
-			throw null == filter ?
-				builder.setKey("no.martinis.found").build() :
-				builder.setKey("no.martinis.found.for.filter").setArguments(filter).build();
+			Enum messageKey = (null == filter) ? NO_MARTINIS_FOUND : NO_MARTINIS_FOUND_FOR_FILTER;
+			Object[] messageArgs = null == filter ? null : new Object[]{filter};
+			throw new MartiniException(messageKey, messageArgs);
 		}
 	}
 
-	protected void assertImplementation(Collection<Martini> martinis) {
+	protected void assertImplementation(Collection<Martini> martinis) throws MartiniException {
 		if (options.isUnimplementedStepsFatal()) {
-			Martini unimplemented = martinis.stream()
-				.filter(this::isUnimplemented)
-				.findFirst()
-				.orElse(null);
-			if (null != unimplemented) {
-				MessageSource source = MessageSources.getMessageSource(this.getClass());
-				throw new MartiniException.Builder()
-					.setMessageSource(source)
-					.setKey("unimplemented.steps")
-					.setArguments(unimplemented)
-					.build();
+			List<Martini> unimplemented = martinis.stream().filter(this::isUnimplemented).collect(Collectors.toList());
+			if (!unimplemented.isEmpty()) {
+				String summary = Joiner.on('\n').join(unimplemented);
+				throw new MartiniException(UNIMPLEMENTED_STEPS, '\n' + summary);
 			}
 		}
 	}
 
 	protected boolean isUnimplemented(Martini martini) {
 		return martini.getStepIndex().values().stream()
-			.map(StepImplementation::getMethod)
+			.map(stepImplementation -> stepImplementation.getMethod().orElse(null))
 			.anyMatch(Objects::isNull);
 	}
 
@@ -210,23 +217,5 @@ public class DefaultMartiniStandaloneEngine implements MartiniStandaloneEngine, 
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	protected MartiniException getMartiniException(InterruptedException cause) {
-		MessageSource messageSource = MessageSources.getMessageSource(this.getClass());
-		return new MartiniException.Builder()
-			.setCause(cause)
-			.setMessageSource(messageSource)
-			.setKey("execution.interrupted")
-			.build();
-	}
-
-	protected MartiniException getMartiniException(TimeoutException cause) {
-		MessageSource messageSource = MessageSources.getMessageSource(this.getClass());
-		throw new MartiniException.Builder()
-			.setCause(cause)
-			.setMessageSource(messageSource)
-			.setKey("execution.timed.out")
-			.build();
 	}
 }

@@ -10,6 +10,12 @@
 	</properties>
 
 	<body>
+		<release version="4.1.1" date="2018-12-20" description="Release 4.1.1">
+			<action dev="pcurich" type="update">
+				Updating to Martini version 4.1.1.
+				Converting DefaultMartiniStandaloneEngine to use cal10n.
+			</action>
+		</release>
 		<release version="4.1.0" date="2018-11-29" description="Release 4.1.0">
 			<action dev="pcurich" type="update">
 				Updating to Java 11.
