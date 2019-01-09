@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="4.1.2" date="2019-01-09" description="Release 4.1.2">
+			<action dev="pcurich" type="update">
+				Updating to Martini core version 4.1.2.
+			</action>
+		</release>
 		<release version="4.1.1" date="2019-01-02" description="Release 4.1.1">
 			<action dev="pcurich" type="update">
 				Updating to Martini version 4.1.1.
