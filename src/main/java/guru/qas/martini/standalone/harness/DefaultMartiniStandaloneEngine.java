@@ -1,5 +1,5 @@
 /*
-Copyright 2017-2018 Penny Rohr Curich
+Copyright 2017-2019 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 
 import ch.qos.cal10n.IMessageConveyor;
+import exception.MartiniException;
 import guru.qas.martini.Martini;
-import guru.qas.martini.MartiniException;
 import guru.qas.martini.Messages;
 import guru.qas.martini.Mixologist;
 import guru.qas.martini.event.SuiteIdentifier;

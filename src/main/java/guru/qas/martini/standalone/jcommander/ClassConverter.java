@@ -1,5 +1,5 @@
 /*
-Copyright 2018 Penny Rohr Curich
+Copyright 2018-2019 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,13 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.standalone.jcommander;
 
-import org.springframework.context.MessageSource;
-
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.ParameterException;
 
-import guru.qas.martini.MartiniException;
-import guru.qas.martini.i18n.MessageSources;
+import exception.MartiniException;
+
+import static guru.qas.martini.standalone.jcommander.ClassConverterMessages.*;
 
 @SuppressWarnings("WeakerAccess")
 public class ClassConverter implements IStringConverter<Class> {
@@ -35,26 +34,15 @@ public class ClassConverter implements IStringConverter<Class> {
 			return Class.forName(s);
 		}
 		catch (ClassNotFoundException e) {
-			MessageSource messageSource = MessageSources.getMessageSource(getClass());
-			MartiniException cause = new MartiniException.Builder()
-				.setCause(e)
-				.setKey("invalid.implementation")
-				.setArguments(s)
-				.setMessageSource(messageSource)
-				.build();
+			MartiniException cause = new MartiniException(e, INVALID_IMPLEMENTATION, s);
 			throw new ParameterException(cause);
 		}
 	}
 
 	protected void assertArgumentProvided(String s) {
-
 		if (s.isEmpty() || s.startsWith("-")) {
-			MessageSource messageSource = MessageSources.getMessageSource(getClass());
-			throw new MartiniException.Builder()
-				.setKey("missing.implementation")
-				.setArguments(s)
-				.setMessageSource(messageSource)
-				.build();
+			MartiniException cause = new MartiniException(MISSING_IMPLEMENTATION, s);
+			throw new ParameterException(cause);
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2018-2019 Penny Rohr Curich
+Copyright 2019 Penny Rohr Curich
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,20 +16,12 @@ limitations under the License.
 
 package guru.qas.martini.standalone.jcommander;
 
-import com.beust.jcommander.IValueValidator;
-import com.beust.jcommander.ParameterException;
+import ch.qos.cal10n.BaseName;
+import ch.qos.cal10n.Locale;
+import ch.qos.cal10n.LocaleData;
 
-import exception.MartiniException;
-
-import static guru.qas.martini.standalone.jcommander.GreaterThanZeroValidatorMessages.*;
-
-public class GreaterThanZeroValidator implements IValueValidator<Number> {
-
-	@Override
-	public void validate(String s, Number number) throws ParameterException {
-		if (0 >= number.longValue()) {
-			MartiniException cause = new MartiniException(INVALID_PARAMETER, s, number);
-			throw new ParameterException(cause);
-		}
-	}
+@BaseName("guru.qas.martini.standalone.jcommander.classConverterMessages")
+@LocaleData({@Locale("en")})
+public enum ClassConverterMessages {
+	INVALID_IMPLEMENTATION, MISSING_IMPLEMENTATION
 }
