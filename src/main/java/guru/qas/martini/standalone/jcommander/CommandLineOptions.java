@@ -83,7 +83,9 @@ public class CommandLineOptions implements Options {
 	@Parameter(
 		names = PARAMETER_SPEL_FILTER,
 		variableArity = true,
-		description = "Spring SPel expression indicating which scenarios should be executed")
+		description = "Spring SPel expression indicating which scenarios should be executed",
+		splitter = NoSplitter.class
+	)
 	protected List<String> spelFilter;
 
 	@Parameter(

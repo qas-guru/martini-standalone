@@ -68,14 +68,14 @@ public class MainTest {
 
 	@Test
 	public void testSpelFilter() {
-		String[] argv = new String[]{"-spelFilter", "isWIP()", "&&", "!isProvisional()"};
+		String[] argv = new String[]{"-spelFilter", "isWIP()", "&&", "!isProvisional()", "||", "isScenario('My, Scenario')"};
 		Main application = getApplication(argv);
 
 		Options options = getOptions(application);
 		String spelFilter = options.getSpelFilter()
 			.orElseThrow(() -> new IllegalStateException("no spelFilter recognized"));
 
-		String joined = "isWIP() && !isProvisional()";
+		String joined = "isWIP() && !isProvisional() || isScenario('My, Scenario')";
 		checkArgument(joined.equals(spelFilter), "wrong spelFilter; expected %s but found %s", joined, spelFilter);
 	}
 

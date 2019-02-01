@@ -27,6 +27,12 @@
 			<organization>Quality Assurance Gurus</organization>
 			<organizationUrl>http://www.qas.guru</organizationUrl>
 		</developer>
+		<developer>
+			<name>Christa E.S. Knapp</name>
+			<email>ce.sprinkle@yahoo.com</email>
+			<organization>Quality Assurance Gurus</organization>
+			<organizationUrl>http://www.qas.guru</organizationUrl>
+		</developer>
 	</developers>
 
 	<scm>
