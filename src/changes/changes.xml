@@ -10,6 +10,11 @@
 	</properties>
 
 	<body>
+		<release version="6.0-JDK12" date="2019-09-16" description="Release 6.0 for JDK 12">
+			<action dev="pcurich" type="update">
+				Updating dependency versions to latest available.
+			</action>
+		</release>
 		<release version="5.0" date="2019-01-18" description="Release 5.0">
 			<action dev="pcurich" type="update">
 				Updating to Martini core version 5.0.

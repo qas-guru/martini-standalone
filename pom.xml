@@ -6,7 +6,7 @@
 
 	<groupId>guru.qas</groupId>
 	<artifactId>martini-standalone</artifactId>
-	<version>5.0.1-SNAPSHOT</version>
+	<version>6.0-JDK12</version>
 	<packaging>jar</packaging>
 
 	<name>${project.groupId}:${project.artifactId}</name>
@@ -44,10 +44,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>11</maven.compiler.source>
-		<maven.compiler.target>11</maven.compiler.target>
-		<maven.compiler.release>11</maven.compiler.release>
-		<slf4j.version>1.7.25</slf4j.version>
+		<maven.compiler.source>12</maven.compiler.source>
+		<maven.compiler.target>12</maven.compiler.target>
+		<maven.compiler.release>12</maven.compiler.release>
+		<slf4j.version>1.7.28</slf4j.version>
 	</properties>
 
 	<distributionManagement>
@@ -62,12 +62,12 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.0</version>
+				<version>3.8.1</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>3.0.1</version>
+				<version>3.1.0</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -84,8 +84,6 @@
 				<configuration>
 					<failOnError>true</failOnError>
 					<additionalOptions>-html5</additionalOptions>
-					<!--Excluded for causing havoc with JDK10 Javadoc -->
-					<!--<sourceFileExcludes></sourceFileExcludes>-->
 				</configuration>
 				<executions>
 					<execution>
@@ -146,19 +144,19 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>5.0</version>
+			<version>6.0-JDK12</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.beust</groupId>
 			<artifactId>jcommander</artifactId>
-			<version>1.72</version>
+			<version>1.78</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testng</groupId>
 			<artifactId>testng</artifactId>
-			<version>6.14.3</version>
+			<version>7.0.0</version>
 			<scope>test</scope>
 		</dependency>
 
