@@ -47,7 +47,7 @@
 		<maven.compiler.source>13</maven.compiler.source>
 		<maven.compiler.target>13</maven.compiler.target>
 		<maven.compiler.release>13</maven.compiler.release>
-		<slf4j.version>1.7.28</slf4j.version>
+		<slf4j.version>1.7.30</slf4j.version>
 	</properties>
 
 	<distributionManagement>
@@ -157,7 +157,7 @@
 		<dependency>
 			<groupId>guru.qas</groupId>
 			<artifactId>martini-core</artifactId>
-			<version>6.0-JDK12</version>
+			<version>7.0-JDK13-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -169,7 +169,7 @@
 		<dependency>
 			<groupId>org.testng</groupId>
 			<artifactId>testng</artifactId>
-			<version>7.0.0</version>
+			<version>7.1.0</version>
 			<scope>test</scope>
 		</dependency>
 

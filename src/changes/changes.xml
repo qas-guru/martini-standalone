@@ -13,7 +13,7 @@
 		<release version="7.0-JDK13" date="2020-03-13" description="Release 7.0 for JDK 13">
 			<action dev="pcurich" type="fix">
 				Merged fixes from version 5.0.1.
-				Updated to Java 13.
+				Updated to martini-core version 7.
 			</action>
 		</release>
 		<release version="6.0-JDK12" date="2019-09-16" description="Release 6.0 for JDK 12">
